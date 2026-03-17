@@ -1,0 +1,163 @@
+---
+# 设计系统索引 - 细分版本
+# 版本: 2.0
+# 日期: 2026-03-17
+
+metadata:
+  version: "2.0"
+  date: "2026-03-17"
+  structure: modular
+  projects: [Unote, Veyan]
+
+# 基础系统
+foundations:
+  colors:
+    file: foundations/colors.md
+    exports: [bg, bgPanel, surface, textPrimary, accent, success, warning, danger]
+
+  typography:
+    file: foundations/typography.md
+    exports: [fontSans, fontMono, bodySize, titleSize]
+
+  spacing:
+    file: foundations/spacing.md
+    exports: [spacingXS, spacingS, spacingM, spacingL, spacingXL, radiusSm, radiusMd, radiusLg]
+
+  animation:
+    file: foundations/animation.md
+    exports: [animFast, animNormal, animSlow]
+
+# UI 组件
+components:
+  button:
+    file: components/button.md
+    components: [BaseButton, IconButton, NavButton]
+
+  input:
+    file: components/input.md
+    components: [TextField, SearchField]
+
+  menu:
+    file: components/menu.md
+    components: [MenuItem, PopupMenu]
+
+  dialog:
+    file: components/dialog.md
+    components: [Dialog, ConfirmDialog]
+
+  card:
+    file: components/card.md
+    components: [Card, InfoCard]
+
+  sidebar:
+    file: components/sidebar.md
+    components: [Sidebar]
+
+  switch:
+    file: components/switch.md
+    components: [Switch, CheckBox, RadioButton]
+
+  slider:
+    file: components/slider.md
+    components: [Slider]
+
+  badge:
+    file: components/badge.md
+    components: [Badge, StatusDot]
+
+  tab:
+    file: components/tab.md
+    components: [TabItem, TabBar]
+
+  combobox:
+    file: components/combobox.md
+    components: [ComboBox, SegmentedControl]
+
+  tooltip:
+    file: components/tooltip.md
+    components: [Tooltip, Toast]
+
+  progress:
+    file: components/progress.md
+    components: [ProgressBar, CircularProgress, BusyIndicator]
+
+  list:
+    file: components/list.md
+    components: [ListItem, TreeNode]
+
+  blur:
+    file: components/blur.md
+    features: [GlassLayer, WindowBlur, Shadow]
+
+  table:
+    file: components/table.md
+    components: [Table]
+
+  pagination:
+    file: components/pagination.md
+    components: [Pagination]
+
+  skeleton:
+    file: components/skeleton.md
+    components: [Skeleton, SkeletonGroup]
+
+  drawer:
+    file: components/drawer.md
+    components: [Drawer]
+
+  empty:
+    file: components/empty.md
+    components: [Empty]
+
+  avatar:
+    file: components/avatar.md
+    components: [Avatar, AvatarGroup]
+
+  alert:
+    file: components/alert.md
+    components: [Alert]
+
+  notification:
+    file: components/notification.md
+    components: [Notification]
+
+  form:
+    file: components/form.md
+    components: [Form, FormItem]
+
+  breadcrumb:
+    file: components/breadcrumb.md
+    components: [Breadcrumb]
+
+  stepper:
+    file: components/stepper.md
+    components: [Stepper]
+
+# 快速查找映射
+quick_find:
+  colors:
+    background: [bg, bgPanel, surface, cardBg]
+    text: [textPrimary, textSecondary, textMuted]
+    accent: [accent, success, warning, danger]
+    border: [border, borderStrong, divider]
+
+  sizes:
+    radius: [radiusSm:6, radiusMd:10, radiusLg:14, radiusXl:18]
+    spacing: [spacingXS:4, spacingS:8, spacingM:12, spacingL:16, spacingXL:24]
+    animation: [animFast:120, animNormal:200, animSlow:350]
+
+  components_by_category:
+    input: [TextField, SearchField, ComboBox]
+    navigation: [Sidebar, TabBar, Menu, Breadcrumb]
+    feedback: [Dialog, Toast, Tooltip, Badge, Alert, Notification]
+    display: [Card, List, Progress, Table, Avatar, Empty]
+    control: [Button, Switch, Slider]
+    form: [Form, FormItem, Stepper]
+
+# 使用统计
+statistics:
+  total_files: 30
+  foundation_files: 4
+  component_files: 26
+  total_components: 46
+  total_colors: 40+
