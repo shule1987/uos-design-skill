@@ -1,0 +1,163 @@
+---
+# 设计系统索引 - 细分版本
+# 版本: 2.0
+# 日期: 2026-03-17
+
+metadata:
+  version: "2.0"
+  date: "2026-03-17"
+  structure: modular
+  projects: [Unote, Veyan]
+
+# 基础系统
+foundations:
+  colors:
+    file: references/foundations/colors.md
+    exports: [bg, bgPanel, surface, textPrimary, accent, success, warning, danger]
+
+  typography:
+    file: references/foundations/typography.md
+    exports: [fontSans, fontMono, bodySize, titleSize]
+
+  spacing:
+    file: references/foundations/spacing.md
+    exports: [spacingXS, spacingS, spacingM, spacingL, spacingXL, radiusSm, radiusMd, radiusLg, radiusXl, radiusPill]
+
+  animation:
+    file: references/foundations/animation.md
+    exports: [animFast, animNormal, animSlow]
+
+# UI 组件
+components:
+  button:
+    file: references/components/button.md
+    components: [BaseButton, IconButton, NavButton]
+
+  input:
+    file: references/components/input.md
+    components: [TextField, SearchField]
+
+  menu:
+    file: references/components/menu.md
+    components: [MenuItem, PopupMenu]
+
+  dialog:
+    file: references/components/dialog.md
+    components: [Dialog, ConfirmDialog]
+
+  card:
+    file: references/components/card.md
+    components: [Card, InfoCard]
+
+  sidebar:
+    file: references/components/sidebar.md
+    components: [Sidebar]
+
+  switch:
+    file: references/components/switch.md
+    components: [Switch, CheckBox, RadioButton]
+
+  slider:
+    file: references/components/slider.md
+    components: [Slider]
+
+  badge:
+    file: references/components/badge.md
+    components: [Badge, StatusDot]
+
+  tab:
+    file: references/components/tab.md
+    components: [TabItem, TabBar]
+
+  combobox:
+    file: references/components/combobox.md
+    components: [ComboBox, SegmentedControl]
+
+  tooltip:
+    file: references/components/tooltip.md
+    components: [Tooltip, Toast]
+
+  progress:
+    file: references/components/progress.md
+    components: [ProgressBar, CircularProgress, BusyIndicator]
+
+  list:
+    file: references/components/list.md
+    components: [ListItem, TreeNode]
+
+  blur:
+    file: references/components/blur.md
+    features: [GlassLayer, WindowBlur, Shadow]
+
+  table:
+    file: references/components/table.md
+    components: [Table]
+
+  pagination:
+    file: references/components/pagination.md
+    components: [Pagination]
+
+  skeleton:
+    file: references/components/skeleton.md
+    components: [Skeleton, SkeletonGroup]
+
+  drawer:
+    file: references/components/drawer.md
+    components: [Drawer]
+
+  empty:
+    file: references/components/empty.md
+    components: [Empty]
+
+  avatar:
+    file: references/components/avatar.md
+    components: [Avatar, AvatarGroup]
+
+  alert:
+    file: references/components/alert.md
+    components: [Alert]
+
+  notification:
+    file: references/components/notification.md
+    components: [Notification]
+
+  form:
+    file: references/components/form.md
+    components: [Form, FormItem]
+
+  breadcrumb:
+    file: references/components/breadcrumb.md
+    components: [Breadcrumb]
+
+  stepper:
+    file: references/components/stepper.md
+    components: [Stepper]
+
+# 快速查找映射
+quick_find:
+  colors:
+    background: [bg, bgPanel, surface, cardBg]
+    text: [textPrimary, textSecondary, textMuted]
+    accent: [accent, success, warning, danger]
+    border: [border, borderStrong, divider]
+
+  sizes:
+    radius: [radiusSm:6, radiusMd:10, radiusLg:14, radiusXl:18]
+    spacing: [spacingXS:4, spacingS:8, spacingM:12, spacingL:16, spacingXL:24]
+    animation: [animFast:120, animNormal:200, animSlow:350]
+
+  components_by_category:
+    input: [TextField, SearchField, ComboBox]
+    navigation: [Sidebar, TabBar, PopupMenu, Breadcrumb]
+    feedback: [Dialog, ConfirmDialog, Tooltip, Toast, Badge, Alert, Notification, Drawer]
+    display: [Card, InfoCard, ListItem, TreeNode, ProgressBar, CircularProgress, Table, Avatar, Empty]
+    control: [BaseButton, IconButton, NavButton, Switch, CheckBox, RadioButton, Slider]
+    form: [Form, FormItem, TextField, SearchField, ComboBox, SegmentedControl, Stepper]
+
+# 使用统计
+statistics:
+  total_reference_files: 30
+  foundation_files: 4
+  component_files: 26
+  total_components: 46
+  total_colors: "40+"

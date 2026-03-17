@@ -1,0 +1,4 @@
+interface:
+  display_name: "UOS Design"
+  short_description: "UOS and Deepin style QML design system guidance"
+  default_prompt: "Use $uos-design to design, implement, or review a UOS or Deepin style QML desktop UI with DTK-first conventions."
