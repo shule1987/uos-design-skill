@@ -5,7 +5,10 @@ inclusion: manual
 # 骨架屏组件
 
 ## Skeleton
-> 示例描述：这里定义 `Skeleton` 组件，基于 `Rectangle` 实现，对外暴露 `variant` 和 `lines` 等属性。 尺寸与样式上宽度使用 `variant === "circle" ? 48 : 200`，高度使用 `variant === "circle" ? 48 : (variant === "text" ? 16 : 100)`，圆角使用 `variant === "circle" ? width / 2 : 4`；交互上覆盖过渡动画。
+- 用途：用于内容加载中的占位，减少空白等待感。
+- 形态：常见有文本条、圆形头像、卡片块状占位等变体。
+- 视觉：颜色对比应低于正式内容，动画保持轻微，避免喧宾夺主。
 
 ## SkeletonGroup
-> 示例描述：这里定义 `SkeletonGroup` 组件，基于 `Column` 实现，对外暴露 `lines` 等属性。 尺寸与样式上间距使用 `Theme.spacingS`；结构上使用 `Repeater` 组织内容。
+- 用途：用于组合多个骨架元素，模拟真实内容结构。
+- 规则：骨架布局应尽量接近最终内容结构，但不需要复制所有细节。

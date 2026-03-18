@@ -15,7 +15,10 @@ inclusion: manual
 - 所有按钮都应支持键盘聚焦、`Enter` / `Space` 激活和明确的 `Accessible.name`。
 
 ## BaseButton
-> 示例描述：这里定义 `BaseButton` 作为通用文本按钮或图文按钮的 fallback 方案，对外暴露 `text`、`iconName`、`primary`、`enabled`、`pressed`、`hovered` 和 `accessibleName` 等属性，并通过 `clicked` 发出交互事件。视觉上，主按钮使用 `Theme.accentBackground` 搭配 `Theme.onAccent`，用于保存、确认、创建等主操作；默认按钮使用 `Theme.surface`、`Theme.textPrimary` 和 `Theme.border`，用于取消、返回、更多设置等辅助操作。尺寸上以内容宽度驱动按钮宽度，并保留稳定的左右内边距和最小点击区域；高度应与输入框、下拉框等基础控件保持一致；圆角使用 `Theme.radiusSm`。结构上用 `Row` 或类似横向容器组织图标和文本，文本居中对齐。交互上需要覆盖悬停、按下、禁用、焦点和键盘激活等状态，并为颜色、阴影或边框变化补充短时过渡。
+- 用途：作为通用文本按钮或图文按钮的 fallback 方案，适合保存、确认、返回、取消、更多设置等常规操作。
+- 视觉：主按钮使用 `Theme.accentBackground` 搭配 `Theme.onAccent`，次要按钮使用 `Theme.surface`、`Theme.textPrimary` 和 `Theme.border`。
+- 尺寸：宽度由内容和内边距共同决定，高度与输入框、下拉框等基础控件保持一致，圆角使用 `Theme.radiusSm`。
+- 交互：覆盖悬停、按下、禁用、焦点和键盘激活等状态，并为颜色、阴影或边框变化补充短时过渡。
 
 ### 设计要点
 - 主按钮在一个对话框页脚、表单底部或工具区里通常只出现一次，避免多个高强调按钮同时竞争注意力。
@@ -30,7 +33,10 @@ inclusion: manual
 - 禁用态：降低对比度和可见性，同时移除 hover、focus 和 press 的交互反馈。
 
 ## IconButton
-> 示例描述：这里定义 `IconButton` 作为纯图标按钮的 fallback 方案，对外暴露 `iconName`、`enabled`、`hovered`、`pressed`、`accessibleName` 和可选的 `danger`、`selected` 等状态属性，并通过 `clicked` 发出交互事件。视觉上以图标为主体，背景默认透明或极轻表面色，悬停时进入 `Theme.surfaceHover`，按下时进入 `Theme.surfaceActive`。尺寸上保持方形热区，实际显示图标尺寸应小于热区本身，以确保命中区域充足；圆角通常使用 `Theme.radiusPill` 或与标题栏按钮一致的圆角。结构上使用单个图标节点居中放置。交互上需要支持键盘激活、焦点环和无障碍名称。
+- 用途：作为纯图标按钮的 fallback 方案，适合工具栏、标题栏、列表局部操作和轻量功能入口。
+- 视觉：背景默认透明或极轻表面色，悬停时进入 `Theme.surfaceHover`，按下时进入 `Theme.surfaceActive`。
+- 尺寸：保持方形热区，实际图标尺寸小于热区本身，以保证命中区域充足；圆角通常使用 `Theme.radiusPill` 或与标题栏按钮一致的圆角。
+- 交互：支持键盘激活、焦点环和无障碍名称。
 
 ### 设计要点
 - 标题栏中的窗口控制按钮优先使用系统或 DTK 提供的能力；自绘标题栏里才使用自定义 `IconButton` 风格。
@@ -38,7 +44,10 @@ inclusion: manual
 - 工具栏按钮、列表操作按钮和标题栏按钮可以共用同一个交互模型，但视觉密度可以按场景微调。
 
 ## NavButton
-> 示例描述：这里定义 `NavButton` 作为侧边栏、标题栏导航区或分段导航中的轻量导航按钮，对外暴露 `iconName`、`text`、`highlighted`、`collapsed`、`enabled` 和 `accessibleName` 等属性，并通过 `clicked` 发出导航事件。视觉上默认使用中性前景和轻背景，选中或当前页状态使用 `Theme.accentForeground`、`Theme.surfaceActive` 或清晰的选中指示条来表达当前定位。尺寸上保持统一的导航节奏，展开态可同时展示图标和文字，折叠态只保留图标并保证图标居中；圆角通常使用 `Theme.radiusSm` 或 `Theme.radiusMd`。交互上需要覆盖悬停、选中、焦点和键盘导航，并确保折叠后依然可以通过 tooltip 或无障碍名称识别其含义。
+- 用途：用于侧边栏、标题栏导航区或分段导航中的轻量导航按钮。
+- 视觉：默认使用中性前景和轻背景；选中或当前页状态使用 `Theme.accentForeground`、`Theme.surfaceActive` 或清晰的选中指示条表达当前定位。
+- 尺寸：展开态同时展示图标和文字，折叠态只保留图标并保证图标居中；圆角通常使用 `Theme.radiusSm` 或 `Theme.radiusMd`。
+- 交互：覆盖悬停、选中、焦点和键盘导航，并确保折叠后依然可以通过 tooltip 或无障碍名称识别其含义。
 
 ### 设计要点
 - `NavButton` 更强调“当前位置”和“可切换分区”，不应与表单提交按钮使用同一视觉优先级。

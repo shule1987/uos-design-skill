@@ -11,184 +11,240 @@ inclusion: manual
 - 字体默认跟随系统 UI 字体和系统字号层级；不要在常规业务界面里写死字体族或固定 px 字号。
 
 ### 导入主题
-
-> 示例描述：这里说明先导入 `QtQuick` 和 `"../theme"`，再在 `Item` 等节点里使用 `Theme.bg`、`Theme.fontSans`、`Theme.bodySize` 和 `Theme.textPrimary` 这些主题 token；其中 `Theme.fontSans` 和 `Theme.bodySize` 应绑定到系统字体与系统字号层级，而不是写死具体数值。
+- 在主题对象中统一暴露 `Theme.bg`、`Theme.textPrimary`、`Theme.fontSans`、`Theme.bodySize` 等 token。
+- 普通业务界面直接消费主题 token，不在业务组件里重复定义颜色、字号和圆角。
+- `Theme.fontSans` 和 `Theme.bodySize` 应绑定到系统字体与系统字号层级，而不是写死具体数值。
 
 ---
 
 ## 常用颜色速查
 
 ### 背景色
-> 示例描述：这里按速查形式说明“背景色”中的主题 token。Theme.bg 用于主窗口背景；Theme.bgPanel 用于侧边栏或附属面板背景；Theme.bgToolbar 用于自绘标题栏与工具栏合一场景的背景；Theme.surface 用于控件表面；Theme.surfaceHover 用于通用悬停态；Theme.surfaceActive 用于激活或选中态；Theme.popupBg 用于菜单等轻量弹出层背景；Theme.panelBg 用于对话框和浮层面板背景；Theme.cardBg 用于卡片背景。
+- `Theme.bg`：主窗口背景。
+- `Theme.bgPanel`：侧边栏或附属面板背景。
+- `Theme.bgToolbar`：自绘标题栏与工具栏合一场景的背景。
+- `Theme.surface`：控件表面背景。
+- `Theme.surfaceHover`：通用悬停背景。
+- `Theme.surfaceActive`：按下、激活或选中背景。
+- `Theme.popupBg`：菜单等轻量弹出层背景。
+- `Theme.panelBg`：对话框和浮层面板背景。
+- `Theme.cardBg`：卡片背景。
 
 ### 文字色
-> 示例描述：这里按速查形式说明“文字色”中的主题 token，Theme.textPrimary 用于普通正文 / 默认图标文字；Theme.textStrong 用于标题 / 悬停强调；Theme.textSecondary 用于次要文字；Theme.textMuted 用于弱化文字；Theme.textDisabled 用于禁用文字。
+- `Theme.textPrimary`：普通正文、默认图标文字。
+- `Theme.textStrong`：标题、悬停强调、关键数值。
+- `Theme.textSecondary`：次要说明文字。
+- `Theme.textMuted`：弱化文本、元信息。
+- `Theme.textDisabled`：禁用态文字。
 
 ### 强调色
-> 示例描述：这里按速查形式说明“强调色”中的主题 token，Theme.systemAccent 用于系统活动色源；Theme.accentForeground 用于激活态前景（文字 / 图标 / 链接）；Theme.accentBackground 用于激活态背景（主按钮 / 选中填充）；Theme.accent 用于兼容别名，等于 accentBackground；Theme.success 用于成功；Theme.warning 用于警告；Theme.danger 用于危险/错误。
+- `Theme.systemAccent`：系统活动色源。
+- `Theme.accentForeground`：激活态前景，如链接、当前步骤、选中图标。
+- `Theme.accentBackground`：激活态背景，如主按钮、当前页、选中填充。
+- `Theme.accent`：`accentBackground` 的兼容别名。
+- `Theme.success`：成功态。
+- `Theme.warning`：警告态。
+- `Theme.danger`：危险或错误态。
 
 ### 边框色
-> 示例描述：这里按速查形式说明“边框色”中的主题 token，Theme.border 用于常规边框；Theme.borderStrong 用于强调边框；Theme.divider 用于分割线。
+- `Theme.border`：常规边框。
+- `Theme.borderStrong`：强调边框。
+- `Theme.divider`：分割线。
 
 ---
 
 ## 常用尺寸速查
 
 ### 圆角
-> 示例描述：这里按速查形式说明“圆角”中的主题 token，Theme.radiusSm 表示小圆角，建议值为 `6`；Theme.radiusMd 表示中圆角，建议值为 `12`；Theme.radiusLg 表示大圆角，建议值为 `18`；Theme.radiusXl 用于超大圆角场景，需要按容器尺寸单独评估；Theme.radiusPill 表示胶囊形或全圆角，建议值为 `50%`。
+- `Theme.radiusSm`：小控件圆角，建议值 `6`。
+- `Theme.radiusMd`：中型容器圆角，建议值 `12`。
+- `Theme.radiusLg`：大型浮层或对话框圆角，建议值 `18`。
+- `Theme.radiusXl`：超大容器的保留档位，按场景单独评估。
+- `Theme.radiusPill`：胶囊形或全圆角，建议值 `50%`。
 
 ### 间距
-> 示例描述：这里按速查形式说明“间距”中的主题 token，Theme.spacingXS 表示超小间距，建议值为 `4`；Theme.spacingS 表示小间距，建议值为 `6`；Theme.spacingM 表示中间距，建议值为 `10`；Theme.spacingL 表示大间距，建议值为 `20`；Theme.spacingXL 表示超大间距，建议值为 `30`。
+- `Theme.spacingXS`：超小间距，建议值 `4`。
+- `Theme.spacingS`：小间距，建议值 `6`。
+- `Theme.spacingM`：常规间距，建议值 `10`。
+- `Theme.spacingL`：区块间距，建议值 `20`。
+- `Theme.spacingXL`：页面级边距，建议值 `30`。
 
 ### 动画时长
-> 示例描述：这里按速查形式说明“动画时长”中的主题 token，Theme.animFast 表示快速 (悬停、点击)，建议值为 `120`；Theme.animNormal 表示常规 (展开、切换)，建议值为 `200`；Theme.animSlow 表示慢速 (大型动画)，建议值为 `350`。
+- `Theme.animFast`：悬停、点击等快速反馈，建议值 `120`。
+- `Theme.animNormal`：展开、切换等常规过渡，建议值 `200`。
+- `Theme.animSlow`：大型布局变化或慢速反馈，建议值 `350`。
 
 ---
 
 ## 常用组件模板
 
 ### 按钮
-> 示例描述：这里给出“按钮”的实现思路。优先使用 DTK 按钮；若需要自定义 fallback，则以轻量容器承载文字或图文内容，宽度跟随内容决定并保留足够点击热区，高度与同层级表单控件保持一致，圆角使用 `Theme.radiusSm`。主按钮使用 `Theme.accentBackground`，次要按钮使用 `Theme.surface` 或透明背景；交互上覆盖悬停、按下、焦点、键盘激活和无障碍语义。
+- 优先使用 DTK 按钮。
+- 自定义 fallback 按钮以内容驱动宽度，并保留足够点击热区。
+- 主按钮使用 `Theme.accentBackground`，次要按钮使用 `Theme.surface` 或透明背景。
+- 交互上覆盖悬停、按下、焦点、键盘激活和无障碍语义。
 
 ### 输入框
-> 示例描述：这里给出“输入框”的实现思路。整体以 `Rectangle` 作为根节点，内部主要组织 `TextInput` 等内容。 关键尺寸上宽度为 `200`，高度为 `36`，圆角为 `Theme.radiusSm`。
+- 结构上通常由输入区域、占位提示和焦点边框构成。
+- 高度应与按钮、下拉框等基础控件保持统一。
+- 焦点态优先通过边框和光标清晰表达，而不是靠过强的背景变化。
 
 ### 列表项
-> 示例描述：这里给出“列表项”的实现思路。整体以 `Rectangle` 作为根节点，内部主要组织 `Text` 等内容。 关键尺寸上宽度为 `parent.width`，高度为 `44`；行为上覆盖过渡动画、无障碍语义。
+- 列表项默认占满可用宽度，高度按单行或双行信息层级决定。
+- 悬停使用 `Theme.surfaceHover`，选中使用更明确的激活态背景或指示条。
+- 列表项必须支持键盘导航和无障碍名称。
 
 ### 卡片
-> 示例描述：这里给出“卡片”的实现思路。整体以 `Rectangle` 作为根节点。 关键尺寸上宽度为 `280`，高度为 `200`，圆角为 `Theme.radiusMd`。
+- 卡片用于承载缩略图、标题、描述和轻量操作。
+- 标题与描述保持明确层级，容器圆角使用 `Theme.radiusMd`。
+- 可在悬停时提供轻微抬升或阴影变化，但不应破坏整体稳定感。
 
 ---
 
 ## 动画模板
 
 ### 颜色过渡
-> 示例描述：这里说明 `color` 变化时需要补上过渡动画，时长使用 `Theme.animFast`。
+- `color` 变化优先使用 `Theme.animFast`。
+- 颜色动画主要用于 hover、pressed 和轻量状态切换。
 
 ### 尺寸变化
-> 示例描述：这里说明 `width` 变化时需要补上过渡动画，时长使用 `Theme.animNormal`，缓动曲线使用 `Easing.OutCubic`。
+- `width`、`height` 或布局相关属性变化优先使用 `Theme.animNormal`。
+- 缓动曲线以 `Easing.OutCubic` 一类直接、平稳的曲线为主。
 
 ### 淡入淡出
-> 示例描述：这里说明“淡入淡出”需要为进入和退出两个阶段分别配置透明度过渡，进入阶段优先使用 `Theme.animFast` 或接近的短时长，退出阶段可以略短于进入阶段。
+- 进入阶段使用短时淡入。
+- 退出阶段通常略短于进入阶段，避免界面响应拖慢。
 
 ### 缩放动画
-> 示例描述：这里说明 `scale` 变化时需要补上过渡动画，时长使用 `120`，缓动曲线使用 `Easing.OutBack`。
+- 缩放只作为轻微辅助，不作为主表现手段。
+- 弹窗、卡片或提示层可配合淡入做很小幅度的缩放。
 
 ---
 
 ## 布局模式
 
 ### 水平布局
-> 示例描述：这里给出“水平布局”的实现思路。整体以 `Row` 作为根节点，内部主要组织 `AppIcon` 和 `Text` 等内容。 关键尺寸上间距为 `Theme.spacingM`。
+- 适用于图标 + 文本、操作按钮组、表单行内组合等场景。
+- 项之间使用 `Theme.spacingM` 或更小间距保持节奏。
 
 ### 垂直布局
-> 示例描述：这里给出“垂直布局”的实现思路。整体以 `Column` 作为根节点，内部主要组织 `Text` 等内容。 关键尺寸上间距为 `Theme.spacingS`，宽度为 `parent.width`。
+- 适用于标题 + 描述、卡片内容、表单分组等场景。
+- 垂直间距优先使用 `Theme.spacingS` 或 `Theme.spacingM`。
 
 ### 网格布局
-> 示例描述：这里给出“网格布局”的实现思路。整体以 `Grid` 作为根节点，内部主要组织 `Repeater` 等内容。 关键尺寸上间距为 `Theme.spacingL`；行为上覆盖重复项生成。
+- 适用于卡片墙、资源列表和数据面板。
+- 列数、卡片宽度和间距需跟随窗口宽度变化，而不是写死固定网格。
 
 ---
 
 ## 响应式设计
 
 ### 断点定义
-> 示例描述：这里给出“断点定义”的实现思路。整体以 `QtObject` 作为根节点。
+- 桌面应用至少区分紧凑、中等和宽屏三个档位。
+- 断点主要用来控制侧边栏折叠、工具栏简化、内容显隐和间距压缩。
 
 ### 自适应布局
-> 示例描述：这里给出“自适应布局”的实现思路。整体以 `Item` 作为根节点。 关键尺寸上宽度为 `breakpoints.isCompact ? 60 : 240`；行为上覆盖过渡动画。
+- 窗口变窄时，优先折叠侧边栏、次级面板和说明区。
+- 不要优先缩小字号或压缩点击热区。
 
 ---
 
 ## 性能优化清单
 
-### ✅ 推荐做法
-- 使用 `Behavior` 而非手动 `Animation`
-- 限制 `clip: true` 的使用
-- 使用 `Loader` 延迟加载重型组件
-- 避免深层嵌套的绑定
-- 使用 `readonly property` 优化只读属性
+### 推荐做法
+- 使用 `Behavior` 而非手动堆叠过多动画对象。
+- 使用 `Loader` 延迟加载重型组件。
+- 避免深层嵌套绑定和频繁重算。
+- 对只读主题 token 使用 `readonly property`。
 
-### ❌ 避免做法
-- 不要在循环中创建大量对象
-- 避免频繁的 `grabToImage` 调用
-- 不要过度使用模糊效果
-- 避免复杂的 JavaScript 表达式绑定
+### 避免做法
+- 不要在循环中创建大量对象。
+- 避免频繁调用 `grabToImage`。
+- 不要把 blur 当作默认必选项。
+- 避免把复杂业务逻辑直接塞进属性绑定。
 
 ---
 
 ## 可访问性清单
 
 ### 键盘导航
-> 示例描述：这里给出“键盘导航”的实现思路。整体以 `Item` 作为根节点。
+- 所有交互组件支持 `Tab` 聚焦。
+- `Enter` / `Space` 激活当前控件，`Esc` 关闭相关浮层。
+- 菜单、列表和标签页还要支持方向键导航。
 
 ### 对比度要求
-- 正文文字：至少 4.5:1
-- 大号文字：至少 3:1
-- 图标和控件：至少 3:1
+- 正文文字至少 `4.5:1`。
+- 大号文字至少 `3:1`。
+- 图标和控件至少 `3:1`。
 
 ### 焦点指示
-> 示例描述：这里给出“焦点指示”的实现思路。整体以 `Rectangle` 作为根节点。
+- 焦点样式应清晰可见，优先使用 `Theme.focusRing` 或等价边框。
+- 焦点不应只靠文字颜色变化表达。
 
 ---
 
 ## 调试技巧
 
 ### 显示边界
-> 示例描述：这里给出“显示边界”的实现思路。整体以 `Rectangle` 作为根节点。
+- 调试布局时可临时打开边框或背景层，确认间距、裁切和对齐关系。
 
 ### 性能计时
-> 示例描述：这里表示在组件初始化完成后执行一次逻辑，通常用于恢复状态、记录时间点或启动后续流程。
+- 在组件初始化、列表首次渲染和大图加载等关键节点记录耗时。
 
 ### 属性监控
-> 示例描述：这里给出一个宽度变化监听示例，用于在布局调试时输出当前尺寸。
+- 对窗口宽度、布局断点、弹窗开关和滚动状态做最小必要监控，便于定位布局异常。
 
 ---
 
 ## 设计决策流程
 
 ### 选择颜色
-1. 背景层 → `Theme.bg` / `Theme.bgPanel`
-2. 控件表面 → `Theme.surface`
-3. 交互状态 → `Theme.surfaceHover` / `Theme.surfaceActive`
-4. 系统活动色源 → `Theme.systemAccent`
-5. 激活前景 → `Theme.accentForeground`
-6. 激活背景 → `Theme.accentBackground`
-7. 功能色 → `Theme.success` / `Theme.warning` / `Theme.danger`
+1. 背景层：`Theme.bg` / `Theme.bgPanel`
+2. 控件表面：`Theme.surface`
+3. 交互状态：`Theme.surfaceHover` / `Theme.surfaceActive`
+4. 系统活动色源：`Theme.systemAccent`
+5. 激活前景：`Theme.accentForeground`
+6. 激活背景：`Theme.accentBackground`
+7. 功能色：`Theme.success` / `Theme.warning` / `Theme.danger`
 
 ### 选择圆角
-- 小控件（按钮、输入框）→ `radiusSm` (6px)
-- 中型容器（卡片、面板）→ `radiusMd` (12px)
-- 大型容器（对话框、浮层）→ `radiusLg` (18px)
-- 胶囊按钮、标签、状态点 → `radiusPill` (50%)
+- 小控件：`radiusSm`
+- 中型容器：`radiusMd`
+- 大型浮层：`radiusLg`
+- 胶囊或状态点：`radiusPill`
 
 ### 选择间距
-- 紧密元素 → `spacingXS` (4px)
-- 相关元素 → `spacingS` (6px)
-- 常规间距 → `spacingM` (10px)
-- 区块间距 → `spacingL` (20px)
-- 页面边距 → `spacingXL` (30px)
+- 紧密元素：`spacingXS`
+- 相关元素：`spacingS`
+- 常规间距：`spacingM`
+- 区块间距：`spacingL`
+- 页面边距：`spacingXL`
 
 ### 选择动画
-- 即时反馈（悬停）→ 80-120ms
-- 状态切换 → 200ms
-- 布局变化 → 350ms
+- 即时反馈：`Theme.animFast`
+- 状态切换：`Theme.animNormal`
+- 布局变化：`Theme.animSlow`
 
 ---
 
 ## 常见问题
 
 ### Q: 如何实现毛玻璃效果？
-> 示例描述：这里给出“Q: 如何实现毛玻璃效果？”的实现思路。整体以 `GlassLayer` 作为根节点。 关键尺寸上圆角为 `Theme.radiusMd`。
+- 先提供纯色或半透明背景回退。
+- 在 compositor 支持且性能允许时，再启用 `GlassLayer`、`WindowBlur` 或 `MultiEffect`。
+- 毛玻璃更适合侧边栏、抽屉和浮动面板，不适合全局滥用。
 
 ### Q: 如何实现深浅主题切换？
-> 示例描述：这里说明“Q: 如何实现深浅主题切换？”相关的主题属性，主要包括 `dark`。 这些定义都考虑了浅色与深色模式之间的切换。
+- `Theme.mode` 默认使用 `system`。
+- 根据 `dark` 状态切换中性色、表面色和前景色，不直接在业务组件里写死浅深两套颜色。
 
 ### Q: 如何优化列表性能？
-> 示例描述：这里给出“Q: 如何优化列表性能？”的实现思路。整体以 `ListView` 作为根节点。 行为上覆盖列表承载。
+- 数据量较大时使用 `ListView`，并开启合适的缓存和项复用。
+- 列表项 delegate 保持轻量，避免在每一项内叠加复杂效果。
 
 ### Q: 如何实现拖动排序？
-> 示例描述：这里给出“Q: 如何实现拖动排序？”的实现思路。整体以 `DragHandler` 作为根节点。 行为上覆盖窗口拖动。
+- 拖拽排序适合卡片、标签或列表项等同层级元素。
+- 拖动反馈要和普通点击反馈区分开，并明确放置目标位置。
 
 ---
 

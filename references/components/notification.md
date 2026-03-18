@@ -5,4 +5,7 @@ inclusion: manual
 # 通知组件
 
 ## Notification
-> 示例描述：这里定义 `Notification` 组件，基于 `Rectangle` 实现，对外暴露 `type`、`title`、`message` 和 `duration` 等属性。 尺寸与样式上宽度使用 `320`，高度使用 `contentColumn.height + Theme.spacingL * 2`，圆角使用 `Theme.radiusMd`，透明度使用 `0`；结构上使用 `Column`、`IconButton` 和 `Timer` 组织内容；交互上覆盖点击触发、过渡动画。
+- 用途：用于后台事件提醒、任务完成、错误提示和系统级消息反馈。
+- 结构：通常包含状态图标、标题、正文和可选关闭按钮；多段信息应保持清晰层级。
+- 视觉：容器可使用 `Theme.panelBg` 或相近悬浮层背景，圆角一般使用 `Theme.radiusMd`。
+- 行为：通知出现与消失应有简短过渡；自动消失时长要和消息重要性匹配，关键错误不应过早消失。
