@@ -4,101 +4,28 @@ inclusion: manual
 
 # 对话框组件
 
-- 优先使用 DTK 或系统原生对话框。自定义 `Popup` 方案适用于品牌化内容或复杂内部布局。
+- 优先使用 DTK 或系统原生对话框。自定义 `Popup` / `Dialog` 方案适用于需要品牌化内容、复杂布局、嵌入表单或自定义操作区的场景。
+
+## 通用规则
+- 对话框用于打断式确认、关键告警、少量表单补充或流程分支选择，不应用来承载长页面级内容。
+- 标题、正文和操作区必须形成明确层级。标题承担问题定义或任务名称，正文负责补充上下文，操作区只保留必要决策。
+- 文本默认跟随系统 UI 字体和系统字号层级，不单独写死字体族或固定 px 字号。
+- 背景优先使用 `Theme.panelBg` 或等价的对话框容器背景；遮罩使用 `Theme.scrim`；阴影和边框只作为层级辅助，不应喧宾夺主。
+- 宽高优先由内容决定，并设置合理的最小可读宽度；不要把所有对话框都写死成同一宽度。
+- 所有对话框都应支持 `Esc` 关闭、`Tab` 焦点循环和默认确认键盘路径；危险操作必须明确区分默认按钮与破坏性按钮。
 
 ## Dialog
+> 示例描述：这里定义 `Dialog` 作为桌面应用中的通用模态对话框 fallback，对外暴露 `title`、`message`、`contentItem`、`buttons`、`closePolicy` 和 `accessibleName` 等属性。结构上通常拆分为头部、内容区和底部操作区三层：头部放标题与必要的关闭入口，内容区承载说明文本、表单或自定义内容，底部操作区放确认与取消按钮。视觉上，标题使用 `Theme.textStrong` 和标题级语义字号，正文使用 `Theme.textPrimary` 或 `Theme.textSecondary`，容器背景使用 `Theme.panelBg`，遮罩使用 `Theme.scrim`，必要时补充轻阴影或边框提升悬浮层级。交互上需要覆盖打开、关闭、默认按钮激活、`Esc` 关闭、焦点回收、点击遮罩是否允许关闭等行为，并保证屏幕阅读器可以读出标题、正文和按钮含义。
 
-```
-        ┌──────────────────────────────┐
-        │                              │
-        │  对话框标题                   │
-        │                              │
-        │  这里是对话框的消息内容，     │
-        │  可以换行显示。               │
-        │                              │
-        │              ┌──────┐ ┌─────┐│
-        │              │ 取消 │ │确定 ││
-        │              └──────┘ └─────┘│
-        └──────────────────────────────┘
-         (400px 宽，居中显示，带阴影)
-```
+### 设计要点
+- 一个标准确认对话框通常只需要 1 到 2 个主要动作，例如“取消 / 确定”；超过 3 个动作时，应优先重新梳理流程或改用菜单、抽屉等更适合的容器。
+- 页脚按钮通常右对齐，并保持主次顺序稳定；如果遵循桌面系统习惯，也可以按目标平台约定调整按钮顺序，但整个产品要一致。
+- 危险操作需要通过文案、强调色和必要的二次确认共同表达，不要只依赖红色按钮来传达风险。
+- 当正文较长时，应优先拆分信息层级、增加段落留白或改用更合适的页面，而不是简单放大对话框尺寸。
 
-```qml
-component Dialog: Popup {
-    id: dialog
-    property string title: ""
-    property string message: ""
-    property var buttons: []
-
-    width: 400
-    height: contentColumn.implicitHeight + 48
-    focus: true
-    modal: true
-    closePolicy: Popup.CloseOnEscape
-    anchors.centerIn: parent
-    Accessible.role: Accessible.Dialog
-    Accessible.name: dialog.title
-
-    background: Rectangle {
-        radius: Theme.radiusLg
-        color: Theme.popupBg
-
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.3)
-            shadowBlur: 0.5
-            shadowVerticalOffset: 4
-        }
-    }
-
-    Overlay.modal: Rectangle {
-        color: Theme.scrim
-    }
-
-    Column {
-        id: contentColumn
-        anchors {
-            left: parent.left
-            right: parent.right
-            top: parent.top
-            margins: Theme.spacingXL
-        }
-        spacing: Theme.spacingL
-
-        Text {
-            width: parent.width
-            text: dialog.title
-            font.pixelSize: 18
-            font.weight: Font.Medium
-            color: Theme.textPrimary
-        }
-
-        Text {
-            width: parent.width
-            text: dialog.message
-            font.pixelSize: 14
-            color: Theme.textSecondary
-            wrapMode: Text.Wrap
-        }
-
-        Row {
-            anchors.right: parent.right
-            spacing: Theme.spacingM
-
-            Repeater {
-                model: dialog.buttons
-                delegate: BaseButton {
-                    text: modelData.text
-                    primary: modelData.primary || false
-                    onClicked: {
-                        if (modelData.callback)
-                            modelData.callback()
-                        dialog.close()
-                    }
-                }
-            }
-        }
-    }
-}
-```
+### 状态与布局规则
+- 标题区：可包含标题、副标题或关闭按钮，但不应堆叠过多操作。
+- 内容区：支持纯文案、图标提示、表单或自定义布局；长内容应允许滚动，但滚动区域和按钮区要明确分离。
+- 操作区：默认使用按钮组，不建议混入复杂的次级设置；如果确有“以后不再提示”等附加选项，应与按钮区形成清晰的上下关系。
+- 打开态：默认居中呈现，出现时使用短时淡入或缩放过渡，不做夸张动画。
+- 关闭态：焦点应返回到触发对话框的控件，避免用户在键盘路径中丢失上下文。

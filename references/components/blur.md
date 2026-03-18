@@ -5,45 +5,10 @@ inclusion: manual
 # 模糊效果
 
 ## GlassLayer
-```qml
-Item {
-    id: root
-    required property Item targetItem
-    property real radius: 10
-    property real blurAmount: 0.9
-    property bool effectEnabled: false
-
-    MultiEffect {
-        anchors.fill: parent
-        source: liveBackdrop
-        blurEnabled: true
-        blur: root.blurAmount
-        blurMax: 96
-        saturation: 1.07
-        brightness: 0.03
-        maskEnabled: true
-        maskSource: blurMask
-    }
-}
-```
+> 示例描述：这里给出“GlassLayer”的实现思路。整体以 `Item` 作为根节点，内部主要组织 `MultiEffect` 等内容。
 
 ## WindowBlur
-```qml
-WindowBlur {
-    window: popup.Window.window
-    enabled: popup.visible
-    blurRadius: 12
-    blurRect: Qt.rect(panel.x, panel.y, panel.width, panel.height)
-}
-```
+> 示例描述：这里给出“WindowBlur”的实现思路。整体以 `WindowBlur` 作为根节点。 关键尺寸上模糊半径为 `12`；行为上覆盖可选模糊效果。
 
 ## Shadow
-```qml
-layer.enabled: true
-layer.effect: MultiEffect {
-    shadowEnabled: true
-    shadowColor: Theme.dark ? Qt.rgba(0,0,0,0.34) : Qt.rgba(0,0,0,0.18)
-    shadowBlur: 0.36
-    shadowVerticalOffset: 2
-}
-```
+> 示例描述：这里说明需要开启图层渲染，并通过 `MultiEffect` 为元素补充阴影等视觉效果。

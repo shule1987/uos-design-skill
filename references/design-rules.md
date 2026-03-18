@@ -36,15 +36,7 @@ inclusion: manual
 - DTK 控件已集成系统主题、无障碍支持和性能优化
 - 仅在 DTK 无法满足需求时才自定义实现
 
-```qml
-import org.deepin.dtk 1.0 as Dtk
-
-// 优先
-Dtk.Button { text: qsTr("确定") }
-
-// 仅在 DTK 缺失所需能力时自定义
-Rectangle { /* fallback */ }
-```
+> 示例描述：这里强调控件优先级，优先直接使用 `Dtk.Button` 这类 DTK 原生控件；只有在原生控件缺少所需能力时，才退回到自定义 `Rectangle` 等 fallback 实现。
 
 ## 命名规范
 
@@ -66,9 +58,9 @@ Rectangle { /* fallback */ }
 ## 窗口规范
 
 ### 标题栏
-**默认保留系统标题栏**
-- 系统窗口装饰是兼容性最高的默认方案
-- 仅在应用需要桌面壳层化布局时使用自绘标题栏
+**默认采用自绘标题栏与工具栏合一**
+- 主应用窗口默认使用标题栏与工具栏二合一的自绘标题栏，以保持统一的桌面应用风格
+- 系统窗口装饰仅作为兼容性回退，适用于平台限制明显、无需统一壳层的工具型窗口或临时窗口
 - 自绘标题栏推荐高度：40px
 - 自绘窗口使用 `Qt.FramelessWindowHint`
 - 自绘标题栏必须支持系统移动、最小化、最大化、还原和关闭，并验证 Wayland / X11 行为
@@ -81,42 +73,7 @@ Rectangle { /* fallback */ }
 3. 最大化/还原按钮 - 方框图标
 4. 关闭按钮 - X 图标，悬停背景色 `Theme.danger`
 
-```qml
-Row {
-    anchors.right: parent.right
-    anchors.verticalCenter: parent.verticalCenter
-    spacing: 0
-
-    IconButton {
-        iconName: "menu"
-        accessibleName: qsTr("打开菜单")
-        onClicked: showMenu()
-    }
-
-    IconButton {
-        iconName: "window-minimize"
-        accessibleName: qsTr("最小化")
-        onClicked: window.showMinimized()
-    }
-
-    IconButton {
-        iconName: window.visibility === Window.Maximized
-            ? "window-restore" : "window-maximize"
-        accessibleName: window.visibility === Window.Maximized
-            ? qsTr("还原窗口") : qsTr("最大化窗口")
-        onClicked: window.visibility === Window.Maximized
-            ? window.showNormal() : window.showMaximized()
-    }
-
-    IconButton {
-        iconName: "window-close"
-        hoverColor: Theme.danger
-        iconHoverColor: "#FFFFFF"
-        accessibleName: qsTr("关闭")
-        onClicked: window.close()
-    }
-}
-```
+> 示例描述：这里给出“窗口控制按钮”的实现思路。整体以 `Row` 作为根节点，内部主要组织 `IconButton` 等内容。 关键尺寸上间距为 `0`。
 
 ## 视觉效果
 
@@ -128,24 +85,7 @@ Row {
 - 适用于：侧边栏、抽屉、浮动面板
 - 所有 blur 方案都必须有纯色回退
 
-```qml
-Sidebar {
-    id: sidebar
-    color: Qt.rgba(
-        Theme.bgPanel.r,
-        Theme.bgPanel.g,
-        Theme.bgPanel.b,
-        0.8
-    )
-
-    WindowBlur {
-        anchors.fill: parent
-        radius: 48
-        z: -1
-        visible: sidebar.blurEnabled
-    }
-}
-```
+> 示例描述：这里给出“毛玻璃效果”的实现思路。整体以 `Sidebar` 作为根节点，内部主要组织 `WindowBlur` 等内容。 行为上覆盖可选模糊效果。
 
 ### 阴影规范
 - 卡片阴影：`blur: 20, spread: 0, offset: (0, 4), opacity: 0.08`
@@ -208,16 +148,7 @@ Sidebar {
 - 表单控件必须有可见标签，必要时补充 `Accessible.description`
 - 自定义控件必须设置合适的 `Accessible.role` 并同步状态变化
 
-```qml
-Rectangle {
-    activeFocusOnTab: true
-    Accessible.role: Accessible.Button
-    Accessible.name: qsTr("保存")
-
-    Keys.onReturnPressed: clicked()
-    Keys.onSpacePressed: clicked()
-}
-```
+> 示例描述：这里给出“屏幕阅读器”的实现思路。整体以 `Rectangle` 作为根节点。 行为上覆盖无障碍语义。
 
 ## 性能规范
 
@@ -239,12 +170,7 @@ Rectangle {
 ## 主题适配
 
 ### 深浅主题切换
-```qml
-readonly property bool isDark: Theme.mode === "dark" ||
-    (Theme.mode === "system" && Qt.styleHints.colorScheme === Qt.ColorScheme.Dark)
-
-color: isDark ? "#1A1A1A" : "#FFFFFF"
-```
+> 示例描述：这里说明“深浅主题切换”相关的主题属性，主要包括 `dark`。 这些定义都考虑了浅色与深色模式之间的切换。
 
 ### 主题色
 - 系统活动色源：`Theme.systemAccent`
@@ -271,6 +197,12 @@ color: isDark ? "#1A1A1A" : "#FFFFFF"
 - 业务组件禁止直接写死蓝色字面量；任何蓝色都应通过 `Theme.systemAccent` 或其派生 token 使用
 
 ## 文本规范
+
+### 字体与字号
+- 默认采用系统 UI 字体，不在普通业务组件中写死字体族
+- 字号不作为固定 px 规范写死，应跟随系统字号、系统缩放和无障碍设置变化
+- 代码、日志、快捷键等确实需要对齐的场景可以单独指定等宽字体
+- 标题、正文、说明文本的层级优先通过语义字号、字重和留白建立，不依赖自定义字体堆叠
 
 ### 文案原则
 - 简洁明了，避免冗余

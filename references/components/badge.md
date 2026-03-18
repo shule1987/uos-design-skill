@@ -5,43 +5,7 @@ inclusion: manual
 # 徽章组件
 
 ## Badge
-```qml
-component Badge: Rectangle {
-    id: badge
-    property int count: 0
-
-    width: Math.max(18, label.width + 8)
-    height: 18
-    radius: 9
-    color: Theme.danger
-    visible: count > 0
-
-    Text {
-        id: label
-        anchors.centerIn: parent
-        text: badge.count > 99 ? "99+" : badge.count
-        font.pixelSize: 11
-        font.weight: Font.Medium
-        color: "#FFFFFF"
-    }
-}
-```
+> 示例描述：这里定义 `Badge` 组件，基于 `Rectangle` 实现，对外暴露 `count` 等属性。 尺寸与样式上宽度使用 `Math.max(18, label.width + 8)`，高度使用 `18`，圆角使用 `9`；结构上使用 `Text` 组织内容。
 
 ## StatusDot
-```qml
-component StatusDot: Rectangle {
-    property string status: "online"
-
-    width: 8
-    height: 8
-    radius: 4
-    color: {
-        switch(status) {
-            case "online": return Theme.success
-            case "away": return Theme.warning
-            case "busy": return Theme.danger
-            default: return Theme.textMuted
-        }
-    }
-}
-```
+> 示例描述：这里定义 `StatusDot` 组件，基于 `Rectangle` 实现，对外暴露 `status` 等属性。 尺寸与样式上宽度使用 `8`，高度使用 `8`，圆角使用 `4`。

@@ -10,7 +10,7 @@ Use this skill when the user is building or reviewing a UOS or Deepin style desk
 ## When To Use
 
 Use this skill for requests about:
-- theme tokens such as colors, typography, spacing, and animation
+- theme tokens such as colors, typography, spacing, radius, and animation
 - desktop layout patterns, sidebars, title bars, and window behavior
 - blur effects, glass surfaces, and other UOS visual conventions
 - common QML components such as buttons, inputs, dialogs, menus, tables, and forms
@@ -23,7 +23,7 @@ Do not use this skill for generic web design unless the user explicitly wants th
 1. Route the request with `references/design-system-modular.yaml` and `references/platform-compatibility.md`.
 2. Read only the files needed for the task.
 3. Prefer DTK native controls before custom implementations.
-4. Default to system-managed windows and popups; only use frameless chrome, `Popup.Window`, or blur when the target Qt/DTK/platform combination supports them.
+4. Default to a self-drawn title bar merged with the toolbar for main application windows, and keep popups system-managed unless `Popup.Window` is explicitly justified and supported by the target Qt/DTK/platform combination.
 5. Reuse documented tokens instead of inventing new values.
 6. Verify that any token, property, or component name used in an answer is defined in the referenced files.
 
@@ -34,6 +34,7 @@ Start with the smallest relevant set:
 - Theme tokens:
   - `references/foundations/colors.md`
   - `references/foundations/typography.md`
+  - `references/foundations/radius.md`
   - `references/foundations/spacing.md`
   - `references/foundations/animation.md`
 - Global rules:
@@ -78,8 +79,9 @@ Start with the smallest relevant set:
 ## Implementation Rules
 
 - Prefer `org.deepin.dtk` controls when they satisfy the request.
-- Prefer system-managed title bars and popups unless the request clearly benefits from custom desktop chrome.
-- Keep color and spacing choices aligned with the documented theme tokens.
+- Prefer a self-drawn title bar merged with the toolbar for main application windows; keep system window decorations only as a compatibility fallback.
+- Prefer system-managed popups unless the request clearly requires window-managed popups and the target platform has been validated.
+- Keep color, radius, and spacing choices aligned with the documented theme tokens.
 - Preserve keyboard navigation, focus states, and contrast requirements.
 - State any Qt/DTK version or Wayland/X11 assumptions when they affect windowing, popup behavior, blur, or drag handling.
 - Use the window and title-bar rules for desktop shells instead of inventing new chrome.

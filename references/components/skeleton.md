@@ -5,37 +5,7 @@ inclusion: manual
 # 骨架屏组件
 
 ## Skeleton
-```qml
-component Skeleton: Rectangle {
-    id: skeleton
-    property string variant: "text"  // text, circle, rect
-    property int lines: 1
-
-    width: variant === "circle" ? 48 : 200
-    height: variant === "circle" ? 48 : (variant === "text" ? 16 : 100)
-    radius: variant === "circle" ? width / 2 : 4
-    color: Theme.surface
-
-    SequentialAnimation on opacity {
-        running: true
-        loops: Animation.Infinite
-        NumberAnimation { from: 1; to: 0.5; duration: 800 }
-        NumberAnimation { from: 0.5; to: 1; duration: 800 }
-    }
-}
-```
+> 示例描述：这里定义 `Skeleton` 组件，基于 `Rectangle` 实现，对外暴露 `variant` 和 `lines` 等属性。 尺寸与样式上宽度使用 `variant === "circle" ? 48 : 200`，高度使用 `variant === "circle" ? 48 : (variant === "text" ? 16 : 100)`，圆角使用 `variant === "circle" ? width / 2 : 4`；交互上覆盖过渡动画。
 
 ## SkeletonGroup
-```qml
-component SkeletonGroup: Column {
-    property int lines: 3
-    spacing: Theme.spacingS
-
-    Repeater {
-        model: lines
-        Skeleton {
-            width: parent.width * (index === lines - 1 ? 0.6 : 1)
-        }
-    }
-}
-```
+> 示例描述：这里定义 `SkeletonGroup` 组件，基于 `Column` 实现，对外暴露 `lines` 等属性。 尺寸与样式上间距使用 `Theme.spacingS`；结构上使用 `Repeater` 组织内容。

@@ -8,305 +8,95 @@ inclusion: manual
 
 - 优先使用 DTK 原生控件；以下模板主要用于无法直接复用 DTK 时的 fallback。
 - 窗口化弹窗、frameless 标题栏和 blur 都需要先参考 `platform-compatibility.md`。
+- 字体默认跟随系统 UI 字体和系统字号层级；不要在常规业务界面里写死字体族或固定 px 字号。
 
 ### 导入主题
 
-```qml
-import QtQuick
-import "../theme"
-
-Item {
-    // 使用主题颜色
-    Rectangle {
-        color: Theme.bg
-    }
-
-    // 使用主题字体
-    Text {
-        font.family: Theme.fontSans
-        font.pixelSize: Theme.bodySize
-        color: Theme.textPrimary
-    }
-}
-```
+> 示例描述：这里说明先导入 `QtQuick` 和 `"../theme"`，再在 `Item` 等节点里使用 `Theme.bg`、`Theme.fontSans`、`Theme.bodySize` 和 `Theme.textPrimary` 这些主题 token；其中 `Theme.fontSans` 和 `Theme.bodySize` 应绑定到系统字体与系统字号层级，而不是写死具体数值。
 
 ---
 
 ## 常用颜色速查
 
 ### 背景色
-```qml
-Theme.bg              // 主背景
-Theme.bgPanel         // 面板背景
-Theme.surface         // 控件表面
-Theme.surfaceHover    // 悬停态
-Theme.surfaceActive   // 激活态
-Theme.popupBg         // 弹窗背景
-Theme.cardBg          // 卡片背景
-```
+> 示例描述：这里按速查形式说明“背景色”中的主题 token。Theme.bg 用于主窗口背景；Theme.bgPanel 用于侧边栏或附属面板背景；Theme.bgToolbar 用于自绘标题栏与工具栏合一场景的背景；Theme.surface 用于控件表面；Theme.surfaceHover 用于通用悬停态；Theme.surfaceActive 用于激活或选中态；Theme.popupBg 用于菜单等轻量弹出层背景；Theme.panelBg 用于对话框和浮层面板背景；Theme.cardBg 用于卡片背景。
 
 ### 文字色
-```qml
-Theme.textPrimary     // 普通正文 / 默认图标文字
-Theme.textStrong      // 标题 / 悬停强调
-Theme.textSecondary   // 次要文字
-Theme.textMuted       // 弱化文字
-Theme.textDisabled    // 禁用文字
-```
+> 示例描述：这里按速查形式说明“文字色”中的主题 token，Theme.textPrimary 用于普通正文 / 默认图标文字；Theme.textStrong 用于标题 / 悬停强调；Theme.textSecondary 用于次要文字；Theme.textMuted 用于弱化文字；Theme.textDisabled 用于禁用文字。
 
 ### 强调色
-```qml
-Theme.systemAccent     // 系统活动色源
-Theme.accentForeground // 激活态前景（文字 / 图标 / 链接）
-Theme.accentBackground // 激活态背景（主按钮 / 选中填充）
-Theme.accent           // 兼容别名，等于 accentBackground
-Theme.success         // 成功
-Theme.warning         // 警告
-Theme.danger          // 危险/错误
-```
+> 示例描述：这里按速查形式说明“强调色”中的主题 token，Theme.systemAccent 用于系统活动色源；Theme.accentForeground 用于激活态前景（文字 / 图标 / 链接）；Theme.accentBackground 用于激活态背景（主按钮 / 选中填充）；Theme.accent 用于兼容别名，等于 accentBackground；Theme.success 用于成功；Theme.warning 用于警告；Theme.danger 用于危险/错误。
 
 ### 边框色
-```qml
-Theme.border          // 常规边框
-Theme.borderStrong    // 强调边框
-Theme.divider         // 分割线
-```
+> 示例描述：这里按速查形式说明“边框色”中的主题 token，Theme.border 用于常规边框；Theme.borderStrong 用于强调边框；Theme.divider 用于分割线。
 
 ---
 
 ## 常用尺寸速查
 
 ### 圆角
-```qml
-Theme.radiusSm: 6     // 小圆角
-Theme.radiusMd: 10    // 中圆角
-Theme.radiusLg: 14    // 大圆角
-Theme.radiusXl: 18    // 超大圆角
-```
+> 示例描述：这里按速查形式说明“圆角”中的主题 token，Theme.radiusSm 表示小圆角，建议值为 `6`；Theme.radiusMd 表示中圆角，建议值为 `12`；Theme.radiusLg 表示大圆角，建议值为 `18`；Theme.radiusXl 用于超大圆角场景，需要按容器尺寸单独评估；Theme.radiusPill 表示胶囊形或全圆角，建议值为 `50%`。
 
 ### 间距
-```qml
-Theme.spacingXS: 4    // 超小间距
-Theme.spacingS: 8     // 小间距
-Theme.spacingM: 12    // 中间距
-Theme.spacingL: 16    // 大间距
-Theme.spacingXL: 24   // 超大间距
-```
+> 示例描述：这里按速查形式说明“间距”中的主题 token，Theme.spacingXS 表示超小间距，建议值为 `4`；Theme.spacingS 表示小间距，建议值为 `6`；Theme.spacingM 表示中间距，建议值为 `10`；Theme.spacingL 表示大间距，建议值为 `20`；Theme.spacingXL 表示超大间距，建议值为 `30`。
 
 ### 动画时长
-```qml
-Theme.animFast: 120      // 快速 (悬停、点击)
-Theme.animNormal: 200    // 常规 (展开、切换)
-Theme.animSlow: 350      // 慢速 (大型动画)
-```
+> 示例描述：这里按速查形式说明“动画时长”中的主题 token，Theme.animFast 表示快速 (悬停、点击)，建议值为 `120`；Theme.animNormal 表示常规 (展开、切换)，建议值为 `200`；Theme.animSlow 表示慢速 (大型动画)，建议值为 `350`。
 
 ---
 
 ## 常用组件模板
 
 ### 按钮
-```qml
-Rectangle {
-    id: button
-    width: 100
-    height: 36
-    radius: Theme.radiusSm
-    color: hovered ? Theme.surfaceHover : Theme.surface
-    activeFocusOnTab: true
-
-    Accessible.role: Accessible.Button
-    Accessible.name: qsTr("按钮")
-
-    Text {
-        anchors.centerIn: parent
-        text: "按钮"
-        color: Theme.textPrimary
-    }
-
-    property bool hovered: false
-    HoverHandler { onHoveredChanged: button.hovered = hovered }
-    TapHandler { onTapped: console.log("Clicked") }
-    Keys.onReturnPressed: console.log("Clicked")
-    Keys.onSpacePressed: console.log("Clicked")
-
-    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-}
-```
+> 示例描述：这里给出“按钮”的实现思路。优先使用 DTK 按钮；若需要自定义 fallback，则以轻量容器承载文字或图文内容，宽度跟随内容决定并保留足够点击热区，高度与同层级表单控件保持一致，圆角使用 `Theme.radiusSm`。主按钮使用 `Theme.accentBackground`，次要按钮使用 `Theme.surface` 或透明背景；交互上覆盖悬停、按下、焦点、键盘激活和无障碍语义。
 
 ### 输入框
-```qml
-Rectangle {
-    width: 200
-    height: 36
-    radius: Theme.radiusSm
-    color: Theme.surface
-    border.color: input.activeFocus ? Theme.accentForeground : Theme.border
-    border.width: 1
-
-    TextInput {
-        id: input
-        anchors.fill: parent
-        anchors.margins: Theme.spacingM
-        font.pixelSize: 13
-        color: Theme.textPrimary
-        selectByMouse: true
-    }
-}
-```
+> 示例描述：这里给出“输入框”的实现思路。整体以 `Rectangle` 作为根节点，内部主要组织 `TextInput` 等内容。 关键尺寸上宽度为 `200`，高度为 `36`，圆角为 `Theme.radiusSm`。
 
 ### 列表项
-```qml
-Rectangle {
-    id: item
-    width: parent.width
-    height: 44
-    color: hovered ? Theme.surfaceHover : "transparent"
-    activeFocusOnTab: true
-
-    Accessible.name: qsTr("列表项")
-
-    Text {
-        anchors.centerIn: parent
-        text: "列表项"
-        color: Theme.textPrimary
-    }
-
-    property bool hovered: false
-    HoverHandler { onHoveredChanged: item.hovered = hovered }
-    TapHandler { onTapped: console.log("Clicked") }
-    Keys.onReturnPressed: console.log("Clicked")
-    Keys.onSpacePressed: console.log("Clicked")
-
-    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-}
-```
+> 示例描述：这里给出“列表项”的实现思路。整体以 `Rectangle` 作为根节点，内部主要组织 `Text` 等内容。 关键尺寸上宽度为 `parent.width`，高度为 `44`；行为上覆盖过渡动画、无障碍语义。
 
 ### 卡片
-```qml
-Rectangle {
-    width: 280
-    height: 200
-    radius: Theme.radiusMd
-    color: Theme.cardBg
-    border.color: Theme.border
-    border.width: 1
-
-    layer.enabled: true
-    layer.effect: MultiEffect {
-        shadowEnabled: true
-        shadowColor: Qt.rgba(0, 0, 0, 0.1)
-        shadowBlur: 0.3
-        shadowVerticalOffset: 2
-    }
-}
-```
+> 示例描述：这里给出“卡片”的实现思路。整体以 `Rectangle` 作为根节点。 关键尺寸上宽度为 `280`，高度为 `200`，圆角为 `Theme.radiusMd`。
 
 ---
 
 ## 动画模板
 
 ### 颜色过渡
-```qml
-Behavior on color {
-    ColorAnimation { duration: Theme.animFast }
-}
-```
+> 示例描述：这里说明 `color` 变化时需要补上过渡动画，时长使用 `Theme.animFast`。
 
 ### 尺寸变化
-```qml
-Behavior on width {
-    NumberAnimation {
-        duration: Theme.animNormal
-        easing.type: Easing.OutCubic
-    }
-}
-```
+> 示例描述：这里说明 `width` 变化时需要补上过渡动画，时长使用 `Theme.animNormal`，缓动曲线使用 `Easing.OutCubic`。
 
 ### 淡入淡出
-```qml
-enter: Transition {
-    NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120 }
-}
-exit: Transition {
-    NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 80 }
-}
-```
+> 示例描述：这里说明“淡入淡出”需要为进入和退出两个阶段分别配置透明度过渡，进入阶段优先使用 `Theme.animFast` 或接近的短时长，退出阶段可以略短于进入阶段。
 
 ### 缩放动画
-```qml
-Behavior on scale {
-    NumberAnimation {
-        duration: 120
-        easing.type: Easing.OutBack
-    }
-}
-```
+> 示例描述：这里说明 `scale` 变化时需要补上过渡动画，时长使用 `120`，缓动曲线使用 `Easing.OutBack`。
 
 ---
 
 ## 布局模式
 
 ### 水平布局
-```qml
-Row {
-    spacing: Theme.spacingM
-    anchors.centerIn: parent
-
-    AppIcon { name: "user"; size: 20 }
-    Text { text: "用户名" }
-}
-```
+> 示例描述：这里给出“水平布局”的实现思路。整体以 `Row` 作为根节点，内部主要组织 `AppIcon` 和 `Text` 等内容。 关键尺寸上间距为 `Theme.spacingM`。
 
 ### 垂直布局
-```qml
-Column {
-    spacing: Theme.spacingS
-    width: parent.width
-
-    Text { text: "标题" }
-    Text { text: "描述" }
-}
-```
+> 示例描述：这里给出“垂直布局”的实现思路。整体以 `Column` 作为根节点，内部主要组织 `Text` 等内容。 关键尺寸上间距为 `Theme.spacingS`，宽度为 `parent.width`。
 
 ### 网格布局
-```qml
-Grid {
-    columns: 3
-    spacing: Theme.spacingL
-
-    Repeater {
-        model: 9
-        delegate: Rectangle {
-            width: 100
-            height: 100
-        }
-    }
-}
-```
+> 示例描述：这里给出“网格布局”的实现思路。整体以 `Grid` 作为根节点，内部主要组织 `Repeater` 等内容。 关键尺寸上间距为 `Theme.spacingL`；行为上覆盖重复项生成。
 
 ---
 
 ## 响应式设计
 
 ### 断点定义
-```qml
-QtObject {
-    readonly property bool isCompact: width < 600
-    readonly property bool isMedium: width >= 600 && width < 1200
-    readonly property bool isLarge: width >= 1200
-}
-```
+> 示例描述：这里给出“断点定义”的实现思路。整体以 `QtObject` 作为根节点。
 
 ### 自适应布局
-```qml
-Item {
-    width: breakpoints.isCompact ? 60 : 240
-
-    Behavior on width {
-        NumberAnimation { duration: 200 }
-    }
-}
-```
+> 示例描述：这里给出“自适应布局”的实现思路。整体以 `Item` 作为根节点。 关键尺寸上宽度为 `breakpoints.isCompact ? 60 : 240`；行为上覆盖过渡动画。
 
 ---
 
@@ -330,14 +120,7 @@ Item {
 ## 可访问性清单
 
 ### 键盘导航
-```qml
-Item {
-    focus: true
-    Keys.onReturnPressed: activate()
-    Keys.onSpacePressed: activate()
-    Keys.onEscapePressed: cancel()
-}
-```
+> 示例描述：这里给出“键盘导航”的实现思路。整体以 `Item` 作为根节点。
 
 ### 对比度要求
 - 正文文字：至少 4.5:1
@@ -345,35 +128,20 @@ Item {
 - 图标和控件：至少 3:1
 
 ### 焦点指示
-```qml
-Rectangle {
-    border.color: activeFocus ? Theme.accentForeground : "transparent"
-    border.width: 2
-}
-```
+> 示例描述：这里给出“焦点指示”的实现思路。整体以 `Rectangle` 作为根节点。
 
 ---
 
 ## 调试技巧
 
 ### 显示边界
-```qml
-Rectangle {
-    border.color: "red"
-    border.width: Settings.debugMode ? 1 : 0
-}
-```
+> 示例描述：这里给出“显示边界”的实现思路。整体以 `Rectangle` 作为根节点。
 
 ### 性能计时
-```qml
-Component.onCompleted: console.time("Load")
-Component.onDestruction: console.timeEnd("Load")
-```
+> 示例描述：这里表示在组件初始化完成后执行一次逻辑，通常用于恢复状态、记录时间点或启动后续流程。
 
 ### 属性监控
-```qml
-onWidthChanged: console.log("Width:", width)
-```
+> 示例描述：这里给出一个宽度变化监听示例，用于在布局调试时输出当前尺寸。
 
 ---
 
@@ -390,16 +158,16 @@ onWidthChanged: console.log("Width:", width)
 
 ### 选择圆角
 - 小控件（按钮、输入框）→ `radiusSm` (6px)
-- 中型容器（卡片、面板）→ `radiusMd` (10px)
-- 大型容器（对话框）→ `radiusLg` (14px)
-- 圆形按钮 → `width/2`
+- 中型容器（卡片、面板）→ `radiusMd` (12px)
+- 大型容器（对话框、浮层）→ `radiusLg` (18px)
+- 胶囊按钮、标签、状态点 → `radiusPill` (50%)
 
 ### 选择间距
 - 紧密元素 → `spacingXS` (4px)
-- 相关元素 → `spacingS` (8px)
-- 常规间距 → `spacingM` (12px)
-- 区块间距 → `spacingL` (16px)
-- 页面边距 → `spacingXL` (24px)
+- 相关元素 → `spacingS` (6px)
+- 常规间距 → `spacingM` (10px)
+- 区块间距 → `spacingL` (20px)
+- 页面边距 → `spacingXL` (30px)
 
 ### 选择动画
 - 即时反馈（悬停）→ 80-120ms
@@ -411,39 +179,16 @@ onWidthChanged: console.log("Width:", width)
 ## 常见问题
 
 ### Q: 如何实现毛玻璃效果？
-```qml
-GlassLayer {
-    anchors.fill: parent
-    targetItem: parent
-    radius: Theme.radiusMd
-    effectEnabled: Settings.enableBlur
-}
-```
+> 示例描述：这里给出“Q: 如何实现毛玻璃效果？”的实现思路。整体以 `GlassLayer` 作为根节点。 关键尺寸上圆角为 `Theme.radiusMd`。
 
 ### Q: 如何实现深浅主题切换？
-```qml
-readonly property bool dark: Theme.mode === "dark" ||
-    (Theme.mode === "system" && Qt.styleHints.colorScheme === Qt.ColorScheme.Dark)
-```
+> 示例描述：这里说明“Q: 如何实现深浅主题切换？”相关的主题属性，主要包括 `dark`。 这些定义都考虑了浅色与深色模式之间的切换。
 
 ### Q: 如何优化列表性能？
-```qml
-ListView {
-    cacheBuffer: 200  // 缓存屏幕外内容
-    reuseItems: true  // 重用列表项
-    clip: true
-}
-```
+> 示例描述：这里给出“Q: 如何优化列表性能？”的实现思路。整体以 `ListView` 作为根节点。 行为上覆盖列表承载。
 
 ### Q: 如何实现拖动排序？
-```qml
-DragHandler {
-    onActiveChanged: {
-        if (active) startDrag()
-        else endDrag()
-    }
-}
-```
+> 示例描述：这里给出“Q: 如何实现拖动排序？”的实现思路。整体以 `DragHandler` 作为根节点。 行为上覆盖窗口拖动。
 
 ---
 
@@ -452,7 +197,8 @@ DragHandler {
 ### 相关文档
 - `references/foundations/colors.md` - 颜色与主题变量
 - `references/foundations/typography.md` - 字体、字号、字重
-- `references/foundations/spacing.md` - 间距与圆角
+- `references/foundations/radius.md` - 圆角规范
+- `references/foundations/spacing.md` - 间距规范
 - `references/foundations/animation.md` - 动画时长与缓动
 - `references/design-system-window-behavior.md` - 窗口行为规范
 - `references/design-system-layout.md` - 布局模式与响应式规范

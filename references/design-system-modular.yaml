@@ -1,11 +1,11 @@
 ---
 # 设计系统索引 - 细分版本
-# 版本: 2.0
-# 日期: 2026-03-17
+# 版本: 2.1
+# 日期: 2026-03-18
 
 metadata:
-  version: "2.0"
-  date: "2026-03-17"
+  version: "2.1"
+  date: "2026-03-18"
   structure: modular
   projects: [Unote, Veyan]
 
@@ -13,21 +13,25 @@ metadata:
 platform:
   compatibility:
     file: references/platform-compatibility.md
-    exports: [dtkFirst, systemDecorationsDefault, framelessOptIn, popupWindowQt68, blurFallback]
+    exports: [dtkFirst, customTitlebarDefault, systemDecorationsFallback, popupWindowQt68, blurFallback]
 
 # 基础系统
 foundations:
   colors:
     file: references/foundations/colors.md
-    exports: [mode, dark, bg, bgPanel, cardBg, cardThumbBg, surface, surfaceHover, surfaceActive, popupBg, scrim, border, divider, systemAccent, fgNormal, fgStrong, textPrimary, textStrong, textSecondary, textMuted, accentForeground, accentBackground, accent, accentLight, accentDark, success, warning, danger, titlebarBg, titlebarHover, titlebarActive, focusRing, tabActive, tabHover, tabInactive]
+    exports: [mode, dark, bg, bgPanel, bgToolbar, cardBg, cardThumbBg, surface, surfaceHover, surfaceActive, popupBg, panelBg, scrim, border, divider, systemAccent, fgNormal, fgStrong, textPrimary, textStrong, textSecondary, textMuted, accentForeground, accentBackground, accent, accentLight, accentDark, success, warning, danger, titlebarBg, titlebarHover, titlebarActive, focusRing, tabActive, tabHover, tabInactive]
 
   typography:
     file: references/foundations/typography.md
     exports: [fontSans, fontMono, bodySize, titleSize, captionSize, labelSize, fontWeightNormal, fontWeightMedium, fontWeightSemiBold]
 
+  radius:
+    file: references/foundations/radius.md
+    exports: [radiusSm, radiusMd, radiusLg, radiusXl, radiusPill]
+
   spacing:
     file: references/foundations/spacing.md
-    exports: [spacingXS, spacingS, spacingM, spacingL, spacingXL, radiusSm, radiusMd, radiusLg, radiusXl, radiusPill]
+    exports: [spacingXS, spacingS, spacingM, spacingL, spacingXL]
 
   animation:
     file: references/foundations/animation.md
@@ -142,7 +146,7 @@ components:
 # 快速查找映射
 quick_find:
   colors:
-    background: [bg, bgPanel, surface, cardBg]
+    background: [bg, bgPanel, bgToolbar, surface, popupBg, panelBg, cardBg]
     text: [textPrimary, textStrong, textSecondary, textMuted]
     accent: [systemAccent, accentForeground, accentBackground, accent, success, warning, danger]
     border: [border, borderStrong, divider]
@@ -150,14 +154,15 @@ quick_find:
     tabs: [tabActive, tabHover, tabInactive]
 
   sizes:
-    radius: [radiusSm:6, radiusMd:10, radiusLg:14, radiusXl:18]
-    spacing: [spacingXS:4, spacingS:8, spacingM:12, spacingL:16, spacingXL:24]
+    radius: ["radiusSm:6", "radiusMd:12", "radiusLg:18", "radiusXl:adaptive", "radiusPill:50%"]
+    spacing: [spacingXS:4, spacingS:6, spacingM:10, spacingL:20, spacingXL:30]
     animation: [animFast:120, animNormal:200, animSlow:350]
 
   platform:
-    windows: [systemDecorationsDefault, framelessOptIn]
-    popups: [Popup.Item, Popup.Window]
-    effects: [solidFallback, blurProgressiveEnhancement]
+    toolkit: [dtkFirst]
+    windows: [customTitlebarDefault, systemDecorationsFallback]
+    popups: [Popup.Item, popupWindowQt68]
+    effects: [blurFallback]
 
   components_by_category:
     input: [TextField, SearchField, ComboBox]
@@ -169,8 +174,8 @@ quick_find:
 
 # 使用统计
 statistics:
-  total_reference_files: 31
-  foundation_files: 4
+  total_reference_files: 37
+  foundation_files: 5
   component_files: 26
   total_components: 38
   total_colors: "40+"

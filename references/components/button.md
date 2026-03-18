@@ -4,166 +4,43 @@ inclusion: manual
 
 # 按钮组件
 
-- 优先使用 DTK 按钮与标题栏按钮；以下组件是无法直接复用 DTK 时的 fallback。
+- 优先使用 DTK 按钮、标题栏按钮和工具栏按钮；以下内容用于无法直接复用 DTK 时的 fallback 设计说明。
+
+## 通用规则
+- 按钮文案默认跟随系统 UI 字体和系统字号层级，不单独写死字体族或固定 px 字号。
+- 同一个操作区域内通常只保留一个主按钮；主按钮用于当前上下文最重要的确认动作，次要动作使用默认按钮或文本按钮。
+- 宽度优先跟随内容决定，同时保证桌面场景下有足够的点击热区；不要为了对齐而无条件把所有按钮做成同宽。
+- 图标与文字并存时，图标放在文字左侧，二者之间保持稳定间距；只有纯图标交互时才使用 `IconButton` 一类方案。
+- 禁用态需要同时降低视觉权重并关闭点击、悬停和键盘激活，不应只改透明度而保留交互。
+- 所有按钮都应支持键盘聚焦、`Enter` / `Space` 激活和明确的 `Accessible.name`。
 
 ## BaseButton
+> 示例描述：这里定义 `BaseButton` 作为通用文本按钮或图文按钮的 fallback 方案，对外暴露 `text`、`iconName`、`primary`、`enabled`、`pressed`、`hovered` 和 `accessibleName` 等属性，并通过 `clicked` 发出交互事件。视觉上，主按钮使用 `Theme.accentBackground` 搭配 `Theme.onAccent`，用于保存、确认、创建等主操作；默认按钮使用 `Theme.surface`、`Theme.textPrimary` 和 `Theme.border`，用于取消、返回、更多设置等辅助操作。尺寸上以内容宽度驱动按钮宽度，并保留稳定的左右内边距和最小点击区域；高度应与输入框、下拉框等基础控件保持一致；圆角使用 `Theme.radiusSm`。结构上用 `Row` 或类似横向容器组织图标和文本，文本居中对齐。交互上需要覆盖悬停、按下、禁用、焦点和键盘激活等状态，并为颜色、阴影或边框变化补充短时过渡。
 
-```
-┌─────────────────┐     ┌─────────────────┐
-│  [图标] 按钮文本 │     │     按钮文本     │
-└─────────────────┘     └─────────────────┘
-   带图标按钮              纯文本按钮
+### 设计要点
+- 主按钮在一个对话框页脚、表单底部或工具区里通常只出现一次，避免多个高强调按钮同时竞争注意力。
+- 当按钮文案较长时，优先通过内容驱动宽度扩展，而不是压缩字号或强制截断。
+- 焦点态使用 `Theme.focusRing` 或等价焦点边框，确保无鼠标场景下可以明确识别当前按钮。
+- 危险操作按钮不应默认用高强调红底；更常见的做法是把危险语义放在确认后的最终按钮或二次确认中体现。
 
-主按钮 (primary)         次要按钮 (default)
-┌─────────────────┐     ┌─────────────────┐
-│ ■ 保存 (白字)    │     │ □ 取消 (黑字)    │
-└─────────────────┘     └─────────────────┘
-  活动色背景               灰色背景
-```
-
-```qml
-component BaseButton: Rectangle {
-    id: button
-    property string text: ""
-    property string iconName: ""
-    property bool primary: false
-    property bool enabled: true
-    property string accessibleName: text
-    signal clicked()
-
-    width: Math.max(88, contentRow.implicitWidth + Theme.spacingL * 2)
-    height: 36
-    radius: Theme.radiusSm
-    opacity: enabled ? 1.0 : 0.5
-    activeFocusOnTab: enabled
-    border.width: activeFocus ? 2 : 0
-    border.color: activeFocus ? Theme.focusRing : "transparent"
-    color: {
-        if (!enabled) return primary ? Theme.accentLight : Theme.surface
-        if (pressed) return primary ? Theme.accentDark : Theme.surfaceActive
-        if (hovered) return primary ? Theme.accentLight : Theme.surfaceHover
-        return primary ? Theme.accentBackground : Theme.surface
-    }
-
-    property bool hovered: false
-    property bool pressed: false
-    Accessible.role: Accessible.Button
-    Accessible.name: button.accessibleName
-
-    HoverHandler { onHoveredChanged: button.hovered = hovered }
-    TapHandler {
-        enabled: button.enabled
-        onPressedChanged: button.pressed = pressed
-        onTapped: button.clicked()
-    }
-    Keys.onReturnPressed: if (button.enabled) button.clicked()
-    Keys.onSpacePressed: if (button.enabled) button.clicked()
-
-    Row {
-        id: contentRow
-        anchors.centerIn: parent
-        spacing: Theme.spacingXS
-
-        AppIcon {
-            name: button.iconName
-            size: 16
-            color: button.primary ? Theme.onAccent : Theme.textStrong
-            visible: button.iconName !== ""
-        }
-
-        Text {
-            text: button.text
-            font.pixelSize: 13
-            color: button.primary ? Theme.onAccent : Theme.textStrong
-        }
-    }
-
-    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-}
-```
+### 状态与布局规则
+- 默认态：次要按钮保持轻背景或透明背景，文字使用 `Theme.textPrimary`。
+- 悬停态：背景进入 `Theme.surfaceHover` 或更高强调层级；文字和图标可提升到 `Theme.textStrong` / `Theme.iconStrong`。
+- 按下态：背景切到 `Theme.surfaceActive` 或主色加深版本，并保持即时反馈。
+- 禁用态：降低对比度和可见性，同时移除 hover、focus 和 press 的交互反馈。
 
 ## IconButton
-```qml
-component IconButton: Rectangle {
-    id: iconBtn
-    property string iconName: ""
-    property int iconSize: 16
-    property bool enabled: true
-    property string accessibleName: ""
-    property color hoverColor: Theme.surfaceHover
-    property color iconColor: Theme.iconNormal
-    property color iconHoverColor: Theme.iconStrong
-    signal clicked()
+> 示例描述：这里定义 `IconButton` 作为纯图标按钮的 fallback 方案，对外暴露 `iconName`、`enabled`、`hovered`、`pressed`、`accessibleName` 和可选的 `danger`、`selected` 等状态属性，并通过 `clicked` 发出交互事件。视觉上以图标为主体，背景默认透明或极轻表面色，悬停时进入 `Theme.surfaceHover`，按下时进入 `Theme.surfaceActive`。尺寸上保持方形热区，实际显示图标尺寸应小于热区本身，以确保命中区域充足；圆角通常使用 `Theme.radiusPill` 或与标题栏按钮一致的圆角。结构上使用单个图标节点居中放置。交互上需要支持键盘激活、焦点环和无障碍名称。
 
-    width: 32
-    height: 32
-    radius: 16
-    opacity: enabled ? 1.0 : 0.5
-    activeFocusOnTab: enabled
-    border.width: activeFocus ? 2 : 0
-    border.color: activeFocus ? Theme.focusRing : "transparent"
-    color: hovered ? hoverColor : "transparent"
-
-    property bool hovered: false
-    Accessible.role: Accessible.Button
-    Accessible.name: accessibleName !== "" ? accessibleName : iconName
-
-    AppIcon {
-        anchors.centerIn: parent
-        name: iconBtn.iconName
-        size: iconBtn.iconSize
-        color: !iconBtn.enabled
-            ? Theme.textDisabled
-            : (iconBtn.hovered ? iconBtn.iconHoverColor : iconBtn.iconColor)
-    }
-
-    HoverHandler { onHoveredChanged: iconBtn.hovered = hovered }
-    TapHandler {
-        enabled: iconBtn.enabled
-        onTapped: iconBtn.clicked()
-    }
-    Keys.onReturnPressed: if (iconBtn.enabled) iconBtn.clicked()
-    Keys.onSpacePressed: if (iconBtn.enabled) iconBtn.clicked()
-
-    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-}
-```
+### 设计要点
+- 标题栏中的窗口控制按钮优先使用系统或 DTK 提供的能力；自绘标题栏里才使用自定义 `IconButton` 风格。
+- 关闭按钮的悬停态可以使用 `Theme.danger` 作为背景或前景强调，但最小化、最大化等按钮应保持中性反馈。
+- 工具栏按钮、列表操作按钮和标题栏按钮可以共用同一个交互模型，但视觉密度可以按场景微调。
 
 ## NavButton
-```qml
-component NavButton: Rectangle {
-    id: navBtn
-    property string iconName: ""
-    property bool highlighted: false
-    property string accessibleName: ""
-    signal clicked()
+> 示例描述：这里定义 `NavButton` 作为侧边栏、标题栏导航区或分段导航中的轻量导航按钮，对外暴露 `iconName`、`text`、`highlighted`、`collapsed`、`enabled` 和 `accessibleName` 等属性，并通过 `clicked` 发出导航事件。视觉上默认使用中性前景和轻背景，选中或当前页状态使用 `Theme.accentForeground`、`Theme.surfaceActive` 或清晰的选中指示条来表达当前定位。尺寸上保持统一的导航节奏，展开态可同时展示图标和文字，折叠态只保留图标并保证图标居中；圆角通常使用 `Theme.radiusSm` 或 `Theme.radiusMd`。交互上需要覆盖悬停、选中、焦点和键盘导航，并确保折叠后依然可以通过 tooltip 或无障碍名称识别其含义。
 
-    width: 32
-    height: 32
-    radius: 8
-    activeFocusOnTab: true
-    color: {
-        if (highlighted) return Theme.titlebarActive
-        if (hovered) return Theme.titlebarHover
-        return "transparent"
-    }
-
-    property bool hovered: false
-    Accessible.role: Accessible.Button
-    Accessible.name: accessibleName !== "" ? accessibleName : iconName
-
-    AppIcon {
-        anchors.centerIn: parent
-        name: navBtn.iconName
-        size: 16
-        color: navBtn.hovered ? Theme.iconHover : Theme.iconNormal
-    }
-
-    HoverHandler { onHoveredChanged: navBtn.hovered = hovered }
-    TapHandler { onTapped: navBtn.clicked() }
-    Keys.onReturnPressed: navBtn.clicked()
-    Keys.onSpacePressed: navBtn.clicked()
-
-    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-}
-```
+### 设计要点
+- `NavButton` 更强调“当前位置”和“可切换分区”，不应与表单提交按钮使用同一视觉优先级。
+- 在侧边栏折叠场景下，当前选中项应仍然可被清晰识别，不能只靠文字颜色变化。
+- 如果导航项允许拖拽排序、固定或显示徽标，应把这些状态作为附加层处理，不要破坏基本点击区域。

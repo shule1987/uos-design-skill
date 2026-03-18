@@ -5,45 +5,23 @@ inclusion: manual
 # 动画系统
 
 ## 动画时长
-```qml
-readonly property int animFast: 120
-readonly property int animNormal: 200
-readonly property int animSlow: 350
-```
+- `animFast`：`120ms`。用于悬停反馈、按钮点击、轻量状态切换等快速响应。
+- `animNormal`：`200ms`。用于菜单展开、标签页切换、面板显隐等常规过渡。
+- `animSlow`：`350ms`。用于对话框、抽屉、大型布局变化等更完整的进入离场动画。
 
 ## 常用动画
 
 ### 颜色过渡
-```qml
-Behavior on color {
-    ColorAnimation { duration: Theme.animFast }
-}
-```
+- 颜色、边框色、阴影强度等轻量视觉反馈默认使用 `Theme.animFast`。
 
 ### 尺寸变化
-```qml
-Behavior on width {
-    NumberAnimation {
-        duration: Theme.animNormal
-        easing.type: Easing.OutCubic
-    }
-}
-```
+- 宽度、高度或布局占比变化默认使用 `Theme.animNormal`，缓动曲线优先使用 `Easing.OutCubic`。
 
 ### 淡入淡出
-```qml
-enter: Transition {
-    NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120 }
-}
-exit: Transition {
-    NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 80 }
-}
-```
+- 淡入淡出建议为进入和退出两个阶段分别配置透明度过渡；进入阶段通常使用 `120ms`，退出阶段可控制在 `80ms` 到 `120ms` 之间。
 
 ## 缓动函数
-```qml
-easing.type: Easing.OutCubic     // 平滑减速（最常用）
-easing.type: Easing.OutQuart     // 强烈减速
-easing.type: Easing.InOutCubic   // 先加速后减速
-easing.type: Easing.OutBack      // 回弹效果
-```
+- `Easing.OutCubic`：平滑减速，最常用的默认曲线。
+- `Easing.OutQuart`：更明显的减速，适合较强调的进入动作。
+- `Easing.InOutCubic`：先加速后减速，适合需要完整节奏感的切换。
+- `Easing.OutBack`：轻微回弹，仅用于少量需要强调反馈的场景。

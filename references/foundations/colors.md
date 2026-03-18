@@ -23,42 +23,48 @@ readonly property bool dark: mode === "dark" ||
 - 不要把纯黑 / 纯白作为默认正文色；它们更适合强调、悬停或高对比标题。
 - 所有蓝色语义都必须从 `systemAccent` 派生，不直接在业务组件中写死蓝色值。
 
+### 黑白前景基准
+- 以下色值用于描述浅色 / 深色主题中的基础前景语义，实际落地时优先映射到现有主题 token。
+- **70% 黑**：`rgba(0, 0, 0, 0.70)`。用于所有浅色主题下 UI 场景的普通状态，例如正文文字、默认功能图标等常规前景内容。
+- **70% 白**：`rgba(255, 255, 255, 0.70)`。用于所有深色主题下 UI 场景的普通状态，例如正文文字、默认功能图标等常规前景内容。
+- **100% 黑**：`rgba(0, 0, 0, 1.00)`。用于浅色主题下的悬停态或强调内容，例如鼠标悬停后的文字、图标，或需要提升视觉权重的信息。
+- **100% 白**：`rgba(255, 255, 255, 1.00)`。用于深色主题下的悬停态或强调内容，例如鼠标悬停后的文字、图标，或需要提升视觉权重的信息。
+
 ## 背景色
 
-### Unote 风格
-```qml
-readonly property color bg: dark ? "#141414" : "#F5F5F7"
-readonly property color bgPanel: dark ? "#1C1C1E" : "#FFFFFF"
-readonly property color bgToolbar: dark ? "#1C1C1E" : "#FFFFFF"
-readonly property color cardBg: dark ? Qt.rgba(0.16, 0.16, 0.16, 0.96) : Qt.rgba(1, 1, 1, 0.995)
-readonly property color cardThumbBg: dark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.04)
-```
+### 基础背景基准
+- 以下色值用于描述桌面应用中最常见的背景层级，实际落地时优先映射到现有主题 token，例如 `bg`、`bgPanel`、`popupBg`、`surfaceHover` 等。
+- **主窗口背景**：浅色主题使用 `#F8F8F8`，深色主题使用 `#181818`。用于应用主窗口和大面积内容画布的基础底色。
+- **对话框背景**：浅色主题使用 `rgba(240, 240, 240, 0.70)`，对应基色 `#F0F0F0`；深色主题使用 `rgba(24, 24, 24, 0.70)`，对应基色 `#181818`。用于模态对话框、浮层面板等需要轻微通透感的容器背景。
+- **侧边栏背景**：浅色主题使用 `rgba(255, 255, 255, 0.80)`；深色主题使用 `rgba(16, 16, 16, 0.80)`，对应基色 `#101010`。用于导航侧栏、资源面板等附属区域背景。
+- **菜单背景**：浅色主题使用 `rgba(238, 238, 238, 0.80)`，对应基色 `#EEEEEE`；深色主题使用 `rgba(24, 24, 24, 0.80)`，对应基色 `#181818`。用于菜单、快捷操作面板等轻量弹出层背景。
+- **Hover 背景**：浅色主题使用 `rgba(0, 0, 0, 0.10)`，深色主题使用 `rgba(255, 255, 255, 0.10)`。用于列表项、按钮、菜单项等组件在鼠标悬停时的背景反馈。
 
-### Veyan 风格
 ```qml
-readonly property color bg0: dark ? "#0d0d0f" : "#f0f0f5"
-readonly property color bg1: dark ? "#13131a" : "#e4e4ec"
-readonly property color bg2: dark ? "#1a1a24" : "#dcdce8"
-readonly property color bg3: dark ? "#22222e" : "#d0d0de"
-readonly property color blurTint: dark ? Qt.rgba(0.07, 0.07, 0.10, 0.60) : Qt.rgba(0.92, 0.92, 0.96, 0.60)
+readonly property color bg: dark ? "#181818" : "#F8F8F8"
+readonly property color bgPanel: dark ? Qt.rgba(16/255, 16/255, 16/255, 0.80) : Qt.rgba(1, 1, 1, 0.80)
+readonly property color bgToolbar: bgPanel
+readonly property color cardBg: dark ? Qt.rgba(24/255, 24/255, 24/255, 0.70) : Qt.rgba(240/255, 240/255, 240/255, 0.70)
+readonly property color cardThumbBg: dark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)
 ```
 
 ## 表面色
 ```qml
 readonly property color surface: dark ? Qt.rgba(1,1,1,0.06) : Qt.rgba(0,0,0,0.06)
-readonly property color surfaceHover: dark ? Qt.rgba(1,1,1,0.10) : Qt.rgba(0,0,0,0.08)
-readonly property color surfaceActive: dark ? Qt.rgba(1,1,1,0.14) : Qt.rgba(0,0,0,0.10)
+readonly property color surfaceHover: dark ? Qt.rgba(1,1,1,0.10) : Qt.rgba(0,0,0,0.10)
+readonly property color surfaceActive: dark ? Qt.rgba(1,1,1,0.14) : Qt.rgba(0,0,0,0.12)
 readonly property color glass: dark ? Qt.rgba(1,1,1,0.06) : Qt.rgba(0,0,0,0.04)
 readonly property color glassBorder: dark ? Qt.rgba(1,1,1,0.12) : Qt.rgba(0,0,0,0.10)
-readonly property color glassHover: dark ? Qt.rgba(1,1,1,0.10) : Qt.rgba(0,0,0,0.07)
+readonly property color glassHover: dark ? Qt.rgba(1,1,1,0.10) : Qt.rgba(0,0,0,0.10)
 ```
 
 ## 弹窗色
 ```qml
-readonly property color popupBg: dark ? Qt.rgba(20/255, 20/255, 20/255, 0.82) : Qt.rgba(238/255, 238/255, 238/255, 0.82)
-readonly property color panelBg: dark ? Qt.rgba(0.094, 0.094, 0.094, 0.80) : Qt.rgba(0.933, 0.933, 0.933, 0.80)
+readonly property color popupBg: dark ? Qt.rgba(24/255, 24/255, 24/255, 0.80) : Qt.rgba(238/255, 238/255, 238/255, 0.80)
+readonly property color panelBg: dark ? Qt.rgba(24/255, 24/255, 24/255, 0.70) : Qt.rgba(240/255, 240/255, 240/255, 0.70)
 readonly property color scrim: dark ? Qt.rgba(0, 0, 0, 0.30) : Qt.rgba(0, 0, 0, 0.16)
 ```
+
 
 ## 边框色
 ```qml
@@ -75,8 +81,8 @@ readonly property color previewAccent: dark ? "#1D56C6" : "#3678E6"
 // 生产代码必须绑定到 DTK / 系统活动色；previewAccent 仅用于文档预览
 property color systemAccent: previewAccent
 
-readonly property color fgNormal: dark ? "#BFBFC4" : "#575757"
-readonly property color fgStrong: dark ? "#F3F3F5" : "#111111"
+readonly property color fgNormal: dark ? Qt.rgba(1,1,1,0.70) : Qt.rgba(0,0,0,0.70)
+readonly property color fgStrong: dark ? Qt.rgba(1,1,1,1.00) : Qt.rgba(0,0,0,1.00)
 readonly property color accentForeground: dark
     ? Qt.lighter(systemAccent, 1.18)
     : Qt.darker(systemAccent, 1.12)
@@ -126,11 +132,11 @@ readonly property color iconAccent: accentForeground
 ## 标题栏与标签页
 ```qml
 readonly property color titlebarBg: bgPanel
-readonly property color titlebarHover: dark ? Qt.rgba(1,1,1,0.10) : Qt.rgba(0,0,0,0.08)
+readonly property color titlebarHover: dark ? Qt.rgba(1,1,1,0.10) : Qt.rgba(0,0,0,0.10)
 readonly property color titlebarActive: dark ? Qt.rgba(1,1,1,0.14) : Qt.rgba(0,0,0,0.12)
 
-readonly property color tabActive: dark ? Qt.rgba(1,1,1,0.12) : Qt.rgba(0,0,0,0.08)
-readonly property color tabHover: dark ? Qt.rgba(1,1,1,0.08) : Qt.rgba(0,0,0,0.05)
+readonly property color tabActive: surfaceActive
+readonly property color tabHover: surfaceHover
 readonly property color tabInactive: "transparent"
 readonly property color itemHover: surfaceHover
 readonly property color selectionFill: accentBackground
