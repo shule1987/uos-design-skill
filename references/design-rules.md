@@ -4,6 +4,31 @@ inclusion: manual
 
 # 设计规则与约定
 
+## 目录
+- 平台基线
+- 控件优先级
+- 命名规范
+- 窗口规范
+- 视觉效果
+- 布局规范
+- 交互规范
+- 无障碍规范
+- 性能规范
+- 主题适配
+- 文本规范
+- 图标规范
+- 数据展示
+- 表单规范
+- 状态管理
+- 响应式设计
+- 国际化
+- 代码规范
+
+## 平台基线
+- 默认目标是 Deepin / UOS 桌面上的 Qt + DTK 应用。
+- 窗口、弹窗、模糊和拖动行为必须结合目标 Qt 版本与 Wayland / X11 会话判断。
+- 先参考 `references/platform-compatibility.md`，再决定是否使用 frameless、`Popup.Window` 或实时模糊。
+
 ## 控件优先级
 
 **优先使用 DTK 控件**
@@ -12,13 +37,13 @@ inclusion: manual
 - 仅在 DTK 无法满足需求时才自定义实现
 
 ```qml
-import org.deepin.dtk 1.0
+import org.deepin.dtk 1.0 as Dtk
 
 // 优先
-Button { text: "确定" }
+Dtk.Button { text: qsTr("确定") }
 
-// 而非自定义
-Rectangle { /* ... */ }
+// 仅在 DTK 缺失所需能力时自定义
+Rectangle { /* fallback */ }
 ```
 
 ## 命名规范
@@ -41,14 +66,16 @@ Rectangle { /* ... */ }
 ## 窗口规范
 
 ### 标题栏
-**所有应用采用自绘标题栏**
-- 使用 `Window.NoTitleBar` 标志
-- 自绘标题栏高度：40px
-- 标题栏背景色：`Theme.bgPanel`
-- 支持拖动整个标题栏区域移动窗口
+**默认保留系统标题栏**
+- 系统窗口装饰是兼容性最高的默认方案
+- 仅在应用需要桌面壳层化布局时使用自绘标题栏
+- 自绘标题栏推荐高度：40px
+- 自绘窗口使用 `Qt.FramelessWindowHint`
+- 自绘标题栏必须支持系统移动、最小化、最大化、还原和关闭，并验证 Wayland / X11 行为
 
 ### 窗口控制按钮
 **右上角标准按钮组（从左到右）**
+
 1. 菜单按钮（可选）- 三横线图标
 2. 最小化按钮 - 横线图标
 3. 最大化/还原按钮 - 方框图标
@@ -61,25 +88,31 @@ Row {
     spacing: 0
 
     IconButton {
-        icon.name: "menu"
+        iconName: "menu"
+        accessibleName: qsTr("打开菜单")
         onClicked: showMenu()
     }
 
     IconButton {
-        icon.name: "window-minimize"
+        iconName: "window-minimize"
+        accessibleName: qsTr("最小化")
         onClicked: window.showMinimized()
     }
 
     IconButton {
-        icon.name: window.visibility === Window.Maximized
+        iconName: window.visibility === Window.Maximized
             ? "window-restore" : "window-maximize"
+        accessibleName: window.visibility === Window.Maximized
+            ? qsTr("还原窗口") : qsTr("最大化窗口")
         onClicked: window.visibility === Window.Maximized
             ? window.showNormal() : window.showMaximized()
     }
 
     IconButton {
-        icon.name: "window-close"
+        iconName: "window-close"
         hoverColor: Theme.danger
+        iconHoverColor: "#FFFFFF"
+        accessibleName: qsTr("关闭")
         onClicked: window.close()
     }
 }
@@ -88,27 +121,28 @@ Row {
 ## 视觉效果
 
 ### 毛玻璃效果
-**所有侧边栏必须使用毛玻璃效果**
-- 使用 `WindowBlur` 或 `MultiEffect` 实现
-- 模糊半径：64
-- 背景透明度：0.7-0.85
+**毛玻璃是渐进增强**
+- 优先提供纯色或半透明面板背景
+- 在 compositor 支持且性能允许时再启用 `WindowBlur` 或 `MultiEffect`
+- 模糊半径建议：12-64，按面板大小选择
 - 适用于：侧边栏、抽屉、浮动面板
+- 所有 blur 方案都必须有纯色回退
 
 ```qml
 Sidebar {
+    id: sidebar
+    color: Qt.rgba(
+        Theme.bgPanel.r,
+        Theme.bgPanel.g,
+        Theme.bgPanel.b,
+        0.8
+    )
+
     WindowBlur {
         anchors.fill: parent
-        radius: 64
+        radius: 48
         z: -1
-    }
-
-    background: Rectangle {
-        color: Qt.rgba(
-            Theme.bgPanel.r,
-            Theme.bgPanel.g,
-            Theme.bgPanel.b,
-            0.8
-        )
+        visible: sidebar.blurEnabled
     }
 }
 ```
@@ -123,9 +157,9 @@ Sidebar {
 ### 侧边栏
 - 宽度：200-240px（可折叠至 60px）
 - 位置：左侧或右侧
-- 必须包含毛玻璃效果
-- **必须包含折叠功能和折叠按钮**
-- 折叠按钮位置：底部居中
+- blur 可选，不应作为必选项
+- 仅在导航层级较多或空间紧张时启用折叠功能
+- 折叠按钮位置：底部居中或标题栏导航区
 - 折叠按钮图标：展开状态用 `chevron-left`，折叠状态用 `chevron-right`
 - 折叠动画时长：200ms
 - 折叠状态下仅显示图标，隐藏文本
@@ -149,11 +183,11 @@ Sidebar {
 
 ### 悬停状态
 - 按钮悬停：背景色变化 + 120ms 过渡
-- 列表项悬停：背景色 `Theme.itemHover`
+- 列表项悬停：背景色 `Theme.surfaceHover`
 - 链接悬停：下划线 + 颜色加深
 
 ### 焦点状态
-- 焦点边框：2px solid `Theme.accent`
+- 焦点边框：2px solid `Theme.accentForeground`
 - 焦点边框圆角：继承元素圆角 + 2px
 - 焦点动画：200ms
 
@@ -171,8 +205,19 @@ Sidebar {
 
 ### 屏幕阅读器
 - 所有图标按钮必须有 `Accessible.name`
-- 表单控件必须有 `Accessible.description`
-- 动态内容变化需要 `Accessible.role`
+- 表单控件必须有可见标签，必要时补充 `Accessible.description`
+- 自定义控件必须设置合适的 `Accessible.role` 并同步状态变化
+
+```qml
+Rectangle {
+    activeFocusOnTab: true
+    Accessible.role: Accessible.Button
+    Accessible.name: qsTr("保存")
+
+    Keys.onReturnPressed: clicked()
+    Keys.onSpacePressed: clicked()
+}
+```
 
 ## 性能规范
 
@@ -195,21 +240,35 @@ Sidebar {
 
 ### 深浅主题切换
 ```qml
-readonly property bool isDark: Qt.styleHints.colorScheme === Qt.Dark
+readonly property bool isDark: Theme.mode === "dark" ||
+    (Theme.mode === "system" && Qt.styleHints.colorScheme === Qt.ColorScheme.Dark)
 
 color: isDark ? "#1A1A1A" : "#FFFFFF"
 ```
 
 ### 主题色
-- 主色调：`Theme.accent`（跟随系统）
+- 系统活动色源：`Theme.systemAccent`
+- 普通文字 / 图标：`Theme.textPrimary` / `Theme.iconNormal`
+- 强调文字 / 悬停图标：`Theme.textStrong` / `Theme.iconStrong`
+- 激活态前景：`Theme.accentForeground`
+- 激活态背景：`Theme.accentBackground`
+- 兼容别名：`Theme.accent` 等价于 `Theme.accentBackground`
 - 成功色：`Theme.success`（绿色）
 - 警告色：`Theme.warning`（橙色）
 - 危险色：`Theme.danger`（红色）
 
 ### 自定义主题
-- 支持用户自定义主色调
-- 自动生成深浅变体
+- 支持接入系统活动色或用户自定义活动色
+- 自动从系统活动色生成前景 / 背景两组变体
 - 保持对比度符合无障碍标准
+
+### 使用约定
+- 标题、关键数值、悬停强调文案优先使用 `Theme.textStrong`
+- 正文、菜单项、列表说明优先使用 `Theme.textPrimary`
+- 次要说明、快捷键、提示信息使用 `Theme.textSecondary` 或 `Theme.textMuted`
+- 选中图标、链接、当前步骤、可点击激活文本使用 `Theme.accentForeground`
+- 主按钮、选中项背景、分页当前页、进度填充使用 `Theme.accentBackground`
+- 业务组件禁止直接写死蓝色字面量；任何蓝色都应通过 `Theme.systemAccent` 或其派生 token 使用
 
 ## 文本规范
 

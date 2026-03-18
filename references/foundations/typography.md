@@ -43,13 +43,20 @@ Text {
     font.pixelSize: 16
     font.family: Theme.fontSans
     font.weight: Theme.fontWeightSemiBold
-    color: Theme.textPrimary
+    color: Theme.textStrong
 }
 
 // 代码
 Text {
     font.pixelSize: 13
     font.family: Theme.fontMono
-    color: Theme.textPrimary
+    color: Theme.textStrong
+}
+
+// 链接 / 激活文本
+Text {
+    font.pixelSize: 14
+    font.family: Theme.fontSans
+    color: Theme.accentForeground
 }
 ```

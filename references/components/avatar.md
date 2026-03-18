@@ -41,7 +41,10 @@ component Avatar: Rectangle {
         visible: avatar.src === "" && avatar.text !== ""
     }
 }
+```
 
+## AvatarGroup
+```qml
 component AvatarGroup: Row {
     property var avatars: []
     property int size: 40

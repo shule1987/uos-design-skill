@@ -4,6 +4,8 @@ inclusion: manual
 
 # 设计系统 - 窗口布局规范
 
+> 默认优先系统标题栏。本文件开头的窗口结构示例聚焦自绘桌面壳层场景，普通业务窗口可直接保留系统装饰。
+
 ## 应用窗口结构
 
 ### 标准应用布局（带侧边栏）
@@ -25,6 +27,7 @@ inclusion: manual
 ```qml
 ApplicationWindow {
     id: mainWindow
+    property bool blurEnabled: false
     width: 1200
     height: 800
 
@@ -67,6 +70,7 @@ ApplicationWindow {
                 anchors.fill: parent
                 radius: 64
                 z: -1
+                visible: mainWindow.blurEnabled
             }
         }
 
@@ -93,10 +97,15 @@ ApplicationWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 0
 
-                    IconButton { icon.name: "menu" }
-                    IconButton { icon.name: "window-minimize" }
-                    IconButton { icon.name: "window-maximize" }
-                    IconButton { icon.name: "window-close"; hoverColor: Theme.danger }
+                    IconButton { iconName: "menu"; accessibleName: qsTr("打开菜单") }
+                    IconButton { iconName: "window-minimize"; accessibleName: qsTr("最小化") }
+                    IconButton { iconName: "window-maximize"; accessibleName: qsTr("最大化") }
+                    IconButton {
+                        iconName: "window-close"
+                        hoverColor: Theme.danger
+                        iconHoverColor: "#FFFFFF"
+                        accessibleName: qsTr("关闭")
+                    }
                 }
             }
 
@@ -166,10 +175,15 @@ ApplicationWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 0
 
-                IconButton { icon.name: "menu" }
-                IconButton { icon.name: "window-minimize" }
-                IconButton { icon.name: "window-maximize" }
-                IconButton { icon.name: "window-close"; hoverColor: Theme.danger }
+                IconButton { iconName: "menu"; accessibleName: qsTr("打开菜单") }
+                IconButton { iconName: "window-minimize"; accessibleName: qsTr("最小化") }
+                IconButton { iconName: "window-maximize"; accessibleName: qsTr("最大化") }
+                IconButton {
+                    iconName: "window-close"
+                    hoverColor: Theme.danger
+                    iconHoverColor: "#FFFFFF"
+                    accessibleName: qsTr("关闭")
+                }
             }
         }
 
@@ -243,6 +257,13 @@ Row {
         width: 240
         height: parent.height
         color: Theme.bgPanel
+
+        WindowBlur {
+            anchors.fill: parent
+            radius: 48
+            z: -1
+            visible: false // 启用前先验证 compositor 与性能
+        }
     }
 
     // 分割线
@@ -564,7 +585,7 @@ Item {
         anchors { left: divider.left; top: parent.top; bottom: parent.bottom }
         width: 8
         x: -4
-        color: hovered ? Theme.accent : "transparent"
+        color: hovered ? Theme.accentForeground : "transparent"
         opacity: 0.3
 
         property bool hovered: false

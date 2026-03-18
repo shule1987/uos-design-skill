@@ -4,11 +4,27 @@ inclusion: manual
 
 # 设计系统 - 窗口行为规范
 
+## 目录
+- 使用前提
+- 窗口系统
+- 窗口拖动
+- 窗口控制按钮
+- 窗口尺寸约束
+- 窗口状态管理
+- 弹窗行为
+- 交互行为
+- 响应式布局
+
+## 使用前提
+- 先确认目标 Qt / DTK 版本，以及应用运行在 Wayland 还是 X11。
+- 默认保留系统窗口装饰；自绘标题栏属于按需启用方案。
+- `Popup.Window` 仅适用于 Qt 6.8+ 且目标桌面已经验证窗口化弹窗行为的场景。
+
 ## 窗口系统
 
 ### 窗口类型
 
-#### 1. 主窗口（Main Window）
+#### 1. 主窗口（默认系统装饰）
 ```qml
 ApplicationWindow {
     id: mainWindow
@@ -17,28 +33,46 @@ ApplicationWindow {
     minimumWidth: 800
     minimumHeight: 600
     visible: true
-    color: "transparent"  // 支持透明背景
+    color: Theme.bg
+}
+```
 
-    // 无边框窗口（自定义标题栏）
+#### 2. 自绘主窗口（按需启用）
+```qml
+ApplicationWindow {
+    id: mainWindow
+    property bool blurEnabled: false
+
+    width: 1200
+    height: 800
+    minimumWidth: 800
+    minimumHeight: 600
+    visible: true
+    color: "transparent"
+
+    // 仅在需要自定义桌面壳层时启用
     flags: Qt.Window | Qt.FramelessWindowHint
 
-    // 背景模糊色调
     Rectangle {
         anchors.fill: parent
-        color: Colors.blurTint
+        color: Theme.bg
     }
 }
 ```
 
-#### 2. 弹窗（Popup Window）
+#### 3. 弹窗（Popup）
 ```qml
 Popup {
     id: popup
-    popupType: Popup.Window  // 独立窗口
+    property bool blurEnabled: false
     width: 300
     height: 400
+    focus: true
     modal: true
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+
+    // Qt 6.8+ 且需要窗口管理器参与时可改为 Popup.Window
+    // popupType: Popup.Window
 
     background: Rectangle {
         radius: Theme.radiusMd
@@ -53,11 +87,12 @@ Popup {
         }
     }
 
-    // 窗口模糊
+    // 可选 blur，必须保留纯色回退
     WindowBlur {
         window: popup.Window.window
         enabled: popup.visible
         blurRadius: 12
+        visible: popup.blurEnabled
     }
 }
 ```
@@ -68,14 +103,13 @@ Popup {
 ```qml
 Item {
     id: titleBar
-    height: 38
+    height: 40
     anchors { left: parent.left; right: parent.right; top: parent.top }
 
-    // 拖动处理
     DragHandler {
         target: null
         onActiveChanged: {
-            if (active)
+            if (active && typeof mainWindow.startSystemMove === "function")
                 mainWindow.startSystemMove()
         }
     }
@@ -101,15 +135,21 @@ Item {
 
     DragHandler {
         target: null
-        onActiveChanged: if (active) root.Window.window.startSystemMove()
+        onActiveChanged: {
+            if (active && Window.window &&
+                    typeof Window.window.startSystemMove === "function")
+                Window.window.startSystemMove()
+        }
     }
 
     TapHandler {
         onDoubleTapped: {
-            if (root.Window.window.visibility === Window.Maximized)
-                root.Window.window.showNormal()
+            if (!Window.window)
+                return
+            if (Window.window.visibility === Window.Maximized)
+                Window.window.showNormal()
             else
-                root.Window.window.showMaximized()
+                Window.window.showMaximized()
         }
     }
 }
@@ -118,30 +158,17 @@ Item {
 ### 窗口控制按钮
 
 ```qml
-component WinButton: Item {
-    id: winBtn
-    property string iconName: ""
-    property bool isClose: false
-    signal clicked()
-
+component WindowControlButton: IconButton {
     width: 46
-    height: 38
+    height: 40
+    radius: 0
+    iconSize: 14
+    hoverColor: isClose ? Theme.danger : Theme.titlebarHover
+    iconColor: Theme.iconNormal
+    iconHoverColor: isClose ? "#FFFFFF" : Theme.iconHover
+    activeFocusOnTab: true
 
-    Rectangle {
-        anchors.fill: parent
-        color: hov.hovered ? Colors.chromeTopHoverFill : "transparent"
-        Behavior on color { ColorAnimation { duration: 80 } }
-    }
-
-    AppIcon {
-        anchors.centerIn: parent
-        name: winBtn.iconName
-        size: 14
-        color: hov.hovered ? Colors.chromeTopIconHover : Colors.chromeTopIconNormal
-    }
-
-    HoverHandler { id: hov }
-    TapHandler { onTapped: winBtn.clicked() }
+    property bool isClose: false
 }
 
 // 使用
@@ -150,12 +177,16 @@ Row {
     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
     spacing: 0
 
-    WinButton {
-        iconName: "minus"
+    WindowControlButton {
+        iconName: "window-minimize"
+        accessibleName: qsTr("最小化")
         onClicked: mainWindow.showMinimized()
     }
-    WinButton {
-        iconName: "maximize-2"
+    WindowControlButton {
+        iconName: mainWindow.visibility === Window.Maximized
+            ? "window-restore" : "window-maximize"
+        accessibleName: mainWindow.visibility === Window.Maximized
+            ? qsTr("还原窗口") : qsTr("最大化窗口")
         onClicked: {
             if (mainWindow.visibility === Window.Maximized)
                 mainWindow.showNormal()
@@ -163,9 +194,10 @@ Row {
                 mainWindow.showMaximized()
         }
     }
-    WinButton {
-        iconName: "x"
+    WindowControlButton {
+        iconName: "window-close"
         isClose: true
+        accessibleName: qsTr("关闭")
         onClicked: mainWindow.close()
     }
 }
@@ -355,7 +387,7 @@ TextInput {
         anchors.margins: -2
         radius: Theme.radiusSm + 2
         color: "transparent"
-        border.color: input.activeFocus ? Theme.accent : "transparent"
+        border.color: input.activeFocus ? Theme.accentForeground : "transparent"
         border.width: 2
     }
 }

@@ -67,7 +67,7 @@ component Toast: Rectangle {
         AppIcon {
             name: toast.type === "success" ? "check-circle" : "info"
             size: 20
-            color: toast.type === "success" ? Theme.success : Theme.accent
+            color: toast.type === "success" ? Theme.success : Theme.accentForeground
         }
 
         Text {

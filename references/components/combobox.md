@@ -10,11 +10,14 @@ component ComboBox: Rectangle {
     id: comboBox
     property var model: []
     property int currentIndex: 0
+    property string accessibleName: qsTr("下拉选择")
 
     width: 200
     height: 36
     radius: Theme.radiusSm
     color: Theme.surface
+    activeFocusOnTab: true
+    Accessible.name: comboBox.accessibleName
 
     Row {
         anchors {
@@ -39,11 +42,14 @@ component ComboBox: Rectangle {
     }
 
     TapHandler { onTapped: dropdown.open() }
+    Keys.onReturnPressed: dropdown.open()
+    Keys.onSpacePressed: dropdown.open()
 
     Popup {
         id: dropdown
         y: parent.height + 4
         width: parent.width
+        focus: true
         padding: 6
 
         background: Rectangle {

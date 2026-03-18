@@ -4,6 +4,8 @@ inclusion: manual
 
 # 标签页组件
 
+- 优先使用 DTK 标签栏；自定义标签页主要用于浏览器式或文档式主窗口。
+
 ## TabItem
 
 ```
@@ -31,15 +33,17 @@ component TabItem: Rectangle {
     signal closeRequested()
 
     width: pinned ? 48 : 180
-    height: 30 
+    height: 30
     radius: Theme.radiusMd
+    activeFocusOnTab: true
     color: {
-        if (active) return Colors.tabActive
-        if (hovered) return Colors.tabHover
-        return Colors.tabInactive
+        if (active) return Theme.tabActive
+        if (hovered) return Theme.tabHover
+        return Theme.tabInactive
     }
 
     property bool hovered: false
+    Accessible.name: tab.title
 
     Row {
         anchors {
@@ -53,7 +57,7 @@ component TabItem: Rectangle {
         Text {
             text: tab.title
             font.pixelSize: 12
-            color: Colors.chromeTopTextPrimary
+            color: Theme.textPrimary
             elide: Text.ElideRight
             visible: !tab.pinned
         }
@@ -70,12 +74,16 @@ component TabItem: Rectangle {
         height: 20
         iconName: "x"
         iconSize: 12
+        hoverColor: Theme.surfaceHover
+        accessibleName: qsTr("关闭标签页")
         visible: !tab.pinned && (tab.hovered || tab.active)
         onClicked: tab.closeRequested()
     }
 
     HoverHandler { onHoveredChanged: tab.hovered = hovered }
     TapHandler { onTapped: tab.clicked() }
-    Behavior on color { ColorAnimation { duration: 100 } }
+    Keys.onReturnPressed: tab.clicked()
+    Keys.onSpacePressed: tab.clicked()
+    Behavior on color { ColorAnimation { duration: Theme.animFast } }
 }
 ```

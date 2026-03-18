@@ -4,6 +4,8 @@ inclusion: manual
 
 # 菜单组件
 
+- 优先使用 DTK 菜单和菜单项。自定义菜单主要用于复杂 delegate、混排内容或平台控件不足的场景。
+
 ## MenuItem
 
 ```
@@ -28,13 +30,18 @@ component MenuItem: Rectangle {
     property string shortcut: ""
     property bool checked: false
     property bool checkable: false
+    property bool enabled: true
     signal triggered()
 
     width: parent.width
     height: 34
+    opacity: enabled ? 1.0 : 0.5
+    activeFocusOnTab: enabled
     color: hovered ? Theme.surfaceHover : "transparent"
 
     property bool hovered: false
+    Accessible.role: Accessible.MenuItem
+    Accessible.name: menuItem.text
 
     Row {
         anchors {
@@ -47,21 +54,21 @@ component MenuItem: Rectangle {
         AppIcon {
             name: menuItem.iconName
             size: 16
-            color: Theme.textPrimary
+            color: menuItem.hovered ? Theme.iconStrong : Theme.iconNormal
             visible: menuItem.iconName !== ""
         }
 
         Text {
             text: menuItem.checked ? "✓" : ""
             font.pixelSize: 14
-            color: Theme.accent
+            color: Theme.accentForeground
             visible: menuItem.checkable
         }
 
         Text {
             text: menuItem.text
             font.pixelSize: 13
-            color: Theme.textPrimary
+            color: menuItem.hovered ? Theme.textStrong : Theme.textPrimary
         }
     }
 
@@ -80,14 +87,17 @@ component MenuItem: Rectangle {
 
     HoverHandler { onHoveredChanged: menuItem.hovered = hovered }
     TapHandler {
+        enabled: menuItem.enabled
         onTapped: {
             if (menuItem.checkable)
                 menuItem.checked = !menuItem.checked
             menuItem.triggered()
         }
     }
+    Keys.onReturnPressed: if (menuItem.enabled) menuItem.triggered()
+    Keys.onSpacePressed: if (menuItem.enabled) menuItem.triggered()
 
-    Behavior on color { ColorAnimation { duration: 80 } }
+    Behavior on color { ColorAnimation { duration: Theme.animFast } }
 }
 ```
 
@@ -98,8 +108,9 @@ component PopupMenu: Popup {
     property var entries: []
 
     width: Math.max(180, menuColumn.implicitWidth + 12)
+    focus: true
     padding: 6
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
 
     background: Rectangle {
         radius: Theme.radiusMd
@@ -123,10 +134,11 @@ component PopupMenu: Popup {
             model: menu.entries
             delegate: MenuItem {
                 text: modelData.text || ""
-                iconName: modelData.iconSource || ""
+                iconName: modelData.iconName || modelData.iconSource || ""
                 shortcut: modelData.shortcut || ""
                 checked: modelData.checked || false
                 checkable: modelData.checkable || false
+                enabled: modelData.enabled !== false
                 onTriggered: {
                     if (modelData.callback)
                         modelData.callback()
@@ -137,10 +149,10 @@ component PopupMenu: Popup {
     }
 
     enter: Transition {
-        NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120 }
+        NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.animFast }
     }
     exit: Transition {
-        NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 80 }
+        NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.animFast }
     }
 }
 ```

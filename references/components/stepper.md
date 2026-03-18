@@ -10,7 +10,7 @@ inclusion: manual
   ①────────②────────③────────④
  完成     进行中    待处理    待处理
  ✓        2        3        4
-[绿色]   [蓝色]   [灰色]   [灰色]
+[绿色]   [活动色] [灰色]   [灰色]
 
 步骤1    步骤2    步骤3    步骤4
 已完成   进行中   等待中   等待中
@@ -40,7 +40,7 @@ component Stepper: Row {
                     anchors.horizontalCenter: parent.horizontalCenter
                     color: {
                         if (index < stepper.current) return Theme.success
-                        if (index === stepper.current) return Theme.accent
+                        if (index === stepper.current) return Theme.accentBackground
                         return Theme.surface
                     }
                     border.color: {
@@ -54,7 +54,7 @@ component Stepper: Row {
                         text: index < stepper.current ? "✓" : (index + 1)
                         font.pixelSize: 14
                         font.weight: Font.Medium
-                        color: index <= stepper.current ? "#FFFFFF" : Theme.textSecondary
+                        color: index <= stepper.current ? Theme.onAccent : Theme.textSecondary
                     }
 
                     Behavior on color { ColorAnimation { duration: 200 } }
@@ -65,7 +65,9 @@ component Stepper: Row {
                     text: modelData.title
                     font.pixelSize: 13
                     font.weight: index === stepper.current ? Font.Medium : Font.Normal
-                    color: index <= stepper.current ? Theme.textPrimary : Theme.textSecondary
+                    color: index === stepper.current
+                        ? Theme.accentForeground
+                        : (index < stepper.current ? Theme.textStrong : Theme.textSecondary)
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.Wrap
                 }

@@ -30,7 +30,7 @@ component Alert: Rectangle {
             case "success": return Theme.success
             case "warning": return Theme.warning
             case "error": return Theme.danger
-            default: return Theme.accent
+            default: return Theme.accentForeground
         }
     }
     border.width: 1

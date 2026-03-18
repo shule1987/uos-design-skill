@@ -23,7 +23,10 @@ component Skeleton: Rectangle {
         NumberAnimation { from: 0.5; to: 1; duration: 800 }
     }
 }
+```
 
+## SkeletonGroup
+```qml
 component SkeletonGroup: Column {
     property int lines: 3
     spacing: Theme.spacingS

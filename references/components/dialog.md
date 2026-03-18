@@ -4,6 +4,8 @@ inclusion: manual
 
 # 对话框组件
 
+- 优先使用 DTK 或系统原生对话框。自定义 `Popup` 方案适用于品牌化内容或复杂内部布局。
+
 ## Dialog
 
 ```
@@ -30,8 +32,12 @@ component Dialog: Popup {
 
     width: 400
     height: contentColumn.implicitHeight + 48
+    focus: true
     modal: true
+    closePolicy: Popup.CloseOnEscape
     anchors.centerIn: parent
+    Accessible.role: Accessible.Dialog
+    Accessible.name: dialog.title
 
     background: Rectangle {
         radius: Theme.radiusLg

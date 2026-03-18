@@ -22,7 +22,7 @@ component Breadcrumb: Row {
                 text: modelData.text
                 font.pixelSize: 13
                 color: index === breadcrumb.items.length - 1
-                    ? Theme.textPrimary
+                    ? Theme.textStrong
                     : Theme.textSecondary
                 anchors.verticalCenter: parent.verticalCenter
 

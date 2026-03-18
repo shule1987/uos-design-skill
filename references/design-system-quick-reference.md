@@ -6,6 +6,9 @@ inclusion: manual
 
 ## 快速开始
 
+- 优先使用 DTK 原生控件；以下模板主要用于无法直接复用 DTK 时的 fallback。
+- 窗口化弹窗、frameless 标题栏和 blur 都需要先参考 `platform-compatibility.md`。
+
 ### 导入主题
 
 ```qml
@@ -44,7 +47,8 @@ Theme.cardBg          // 卡片背景
 
 ### 文字色
 ```qml
-Theme.textPrimary     // 主要文字
+Theme.textPrimary     // 普通正文 / 默认图标文字
+Theme.textStrong      // 标题 / 悬停强调
 Theme.textSecondary   // 次要文字
 Theme.textMuted       // 弱化文字
 Theme.textDisabled    // 禁用文字
@@ -52,7 +56,10 @@ Theme.textDisabled    // 禁用文字
 
 ### 强调色
 ```qml
-Theme.accent          // 主强调色
+Theme.systemAccent     // 系统活动色源
+Theme.accentForeground // 激活态前景（文字 / 图标 / 链接）
+Theme.accentBackground // 激活态背景（主按钮 / 选中填充）
+Theme.accent           // 兼容别名，等于 accentBackground
 Theme.success         // 成功
 Theme.warning         // 警告
 Theme.danger          // 危险/错误
@@ -100,10 +107,15 @@ Theme.animSlow: 350      // 慢速 (大型动画)
 ### 按钮
 ```qml
 Rectangle {
+    id: button
     width: 100
     height: 36
     radius: Theme.radiusSm
     color: hovered ? Theme.surfaceHover : Theme.surface
+    activeFocusOnTab: true
+
+    Accessible.role: Accessible.Button
+    Accessible.name: qsTr("按钮")
 
     Text {
         anchors.centerIn: parent
@@ -112,10 +124,12 @@ Rectangle {
     }
 
     property bool hovered: false
-    HoverHandler { onHoveredChanged: parent.hovered = hovered }
+    HoverHandler { onHoveredChanged: button.hovered = hovered }
     TapHandler { onTapped: console.log("Clicked") }
+    Keys.onReturnPressed: console.log("Clicked")
+    Keys.onSpacePressed: console.log("Clicked")
 
-    Behavior on color { ColorAnimation { duration: 80 } }
+    Behavior on color { ColorAnimation { duration: Theme.animFast } }
 }
 ```
 
@@ -126,7 +140,7 @@ Rectangle {
     height: 36
     radius: Theme.radiusSm
     color: Theme.surface
-    border.color: input.activeFocus ? Theme.accent : Theme.border
+    border.color: input.activeFocus ? Theme.accentForeground : Theme.border
     border.width: 1
 
     TextInput {
@@ -143,9 +157,13 @@ Rectangle {
 ### 列表项
 ```qml
 Rectangle {
+    id: item
     width: parent.width
     height: 44
     color: hovered ? Theme.surfaceHover : "transparent"
+    activeFocusOnTab: true
+
+    Accessible.name: qsTr("列表项")
 
     Text {
         anchors.centerIn: parent
@@ -154,10 +172,12 @@ Rectangle {
     }
 
     property bool hovered: false
-    HoverHandler { onHoveredChanged: parent.hovered = hovered }
+    HoverHandler { onHoveredChanged: item.hovered = hovered }
     TapHandler { onTapped: console.log("Clicked") }
+    Keys.onReturnPressed: console.log("Clicked")
+    Keys.onSpacePressed: console.log("Clicked")
 
-    Behavior on color { ColorAnimation { duration: 80 } }
+    Behavior on color { ColorAnimation { duration: Theme.animFast } }
 }
 ```
 
@@ -327,7 +347,7 @@ Item {
 ### 焦点指示
 ```qml
 Rectangle {
-    border.color: activeFocus ? Theme.accent : "transparent"
+    border.color: activeFocus ? Theme.accentForeground : "transparent"
     border.width: 2
 }
 ```
@@ -363,8 +383,10 @@ onWidthChanged: console.log("Width:", width)
 1. 背景层 → `Theme.bg` / `Theme.bgPanel`
 2. 控件表面 → `Theme.surface`
 3. 交互状态 → `Theme.surfaceHover` / `Theme.surfaceActive`
-4. 强调元素 → `Theme.accent`
-5. 功能色 → `Theme.success` / `Theme.warning` / `Theme.danger`
+4. 系统活动色源 → `Theme.systemAccent`
+5. 激活前景 → `Theme.accentForeground`
+6. 激活背景 → `Theme.accentBackground`
+7. 功能色 → `Theme.success` / `Theme.warning` / `Theme.danger`
 
 ### 选择圆角
 - 小控件（按钮、输入框）→ `radiusSm` (6px)

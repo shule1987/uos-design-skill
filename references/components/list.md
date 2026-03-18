@@ -16,6 +16,7 @@ component ListItem: Rectangle {
 
     width: parent.width
     height: subtitle ? 56 : 44
+    activeFocusOnTab: true
     color: {
         if (selected) return Theme.surfaceActive
         if (hovered) return Theme.surfaceHover
@@ -23,6 +24,7 @@ component ListItem: Rectangle {
     }
 
     property bool hovered: false
+    Accessible.name: listItem.title
 
     Row {
         anchors {
@@ -59,6 +61,8 @@ component ListItem: Rectangle {
 
     HoverHandler { onHoveredChanged: listItem.hovered = hovered }
     TapHandler { onTapped: listItem.clicked() }
-    Behavior on color { ColorAnimation { duration: 80 } }
+    Keys.onReturnPressed: listItem.clicked()
+    Keys.onSpacePressed: listItem.clicked()
+    Behavior on color { ColorAnimation { duration: Theme.animFast } }
 }
 ```

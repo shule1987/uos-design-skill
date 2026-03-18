@@ -13,11 +13,13 @@ component Switch: Item {
 
     width: 44
     height: 24
+    activeFocusOnTab: true
+    Accessible.name: qsTr("开关")
 
     Rectangle {
         anchors.fill: parent
         radius: height / 2
-        color: switchControl.checked ? Theme.accent : Theme.surface
+        color: switchControl.checked ? Theme.accentBackground : Theme.surface
         Behavior on color { ColorAnimation { duration: 120 } }
     }
 
@@ -47,6 +49,14 @@ component Switch: Item {
             switchControl.toggled()
         }
     }
+    Keys.onReturnPressed: {
+        switchControl.checked = !switchControl.checked
+        switchControl.toggled()
+    }
+    Keys.onSpacePressed: {
+        switchControl.checked = !switchControl.checked
+        switchControl.toggled()
+    }
 }
 ```
 
@@ -59,13 +69,15 @@ component CheckBox: Row {
     signal toggled()
 
     spacing: Theme.spacingS
+    activeFocusOnTab: true
+    Accessible.name: checkbox.text
 
     Rectangle {
         width: 18
         height: 18
         radius: 4
-        color: checkbox.checked ? Theme.accent : Theme.surface
-        border.color: checkbox.checked ? Theme.accent : Theme.border
+        color: checkbox.checked ? Theme.accentBackground : Theme.surface
+        border.color: checkbox.checked ? Theme.accentForeground : Theme.border
         border.width: 1
 
         Text {
@@ -90,6 +102,67 @@ component CheckBox: Row {
             checkbox.checked = !checkbox.checked
             checkbox.toggled()
         }
+    }
+    Keys.onReturnPressed: {
+        checkbox.checked = !checkbox.checked
+        checkbox.toggled()
+    }
+    Keys.onSpacePressed: {
+        checkbox.checked = !checkbox.checked
+        checkbox.toggled()
+    }
+}
+```
+
+## RadioButton
+```qml
+component RadioButton: Row {
+    id: radio
+    property string text: ""
+    property bool checked: false
+    signal toggled()
+
+    spacing: Theme.spacingS
+    activeFocusOnTab: true
+    Accessible.name: radio.text
+
+    Rectangle {
+        width: 18
+        height: 18
+        radius: 9
+        color: Theme.surface
+        border.color: radio.checked ? Theme.accentForeground : Theme.border
+        border.width: 1
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: 8
+            height: 8
+            radius: 4
+            color: Theme.accentBackground
+            visible: radio.checked
+        }
+    }
+
+    Text {
+        text: radio.text
+        font.pixelSize: 13
+        color: Theme.textPrimary
+    }
+
+    TapHandler {
+        onTapped: {
+            radio.checked = true
+            radio.toggled()
+        }
+    }
+    Keys.onReturnPressed: {
+        radio.checked = true
+        radio.toggled()
+    }
+    Keys.onSpacePressed: {
+        radio.checked = true
+        radio.toggled()
     }
 }
 ```

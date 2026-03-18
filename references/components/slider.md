@@ -36,7 +36,7 @@ component Slider: Item {
         width: handle.x + handle.width / 2
         height: 4
         radius: 2
-        color: Theme.accent
+        color: Theme.accentBackground
     }
 
     Rectangle {
@@ -47,7 +47,7 @@ component Slider: Item {
         x: (slider.value - slider.from) / (slider.to - slider.from) * (slider.width - width)
         anchors.verticalCenter: parent.verticalCenter
         color: "#FFFFFF"
-        border.color: Theme.accent
+        border.color: Theme.accentForeground
         border.width: 2
 
         DragHandler {

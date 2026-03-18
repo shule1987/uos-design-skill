@@ -37,7 +37,7 @@ WindowBlur {
 }
 ```
 
-## 阴影
+## Shadow
 ```qml
 layer.enabled: true
 layer.effect: MultiEffect {

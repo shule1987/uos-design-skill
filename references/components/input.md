@@ -16,7 +16,7 @@ inclusion: manual
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ 输入的文本|              ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━┛
-  (蓝色边框，光标闪烁)
+  (活动色边框，光标闪烁)
 ```
 
 ## SearchField
@@ -33,12 +33,13 @@ component TextField: Rectangle {
     id: field
     property alias text: input.text
     property alias placeholderText: placeholder.text
+    property string accessibleName: placeholder.text
 
     width: 200
     height: 36
     radius: Theme.radiusSm
     color: input.activeFocus ? Theme.surfaceActive : Theme.surface
-    border.color: input.activeFocus ? Theme.accent : Theme.border
+    border.color: input.activeFocus ? Theme.accentForeground : Theme.border
     border.width: 1
 
     TextInput {
@@ -51,9 +52,10 @@ component TextField: Rectangle {
         }
         font.pixelSize: 13
         color: Theme.textPrimary
-        selectionColor: Theme.accent
+        selectionColor: Theme.accentBackground
         selectByMouse: true
         clip: true
+        Accessible.name: field.accessibleName
     }
 
     Text {
@@ -78,6 +80,7 @@ component TextField: Rectangle {
 component SearchField: Rectangle {
     id: searchField
     property alias text: input.text
+    property string accessibleName: qsTr("搜索")
     signal searchRequested(string query)
 
     width: 240
@@ -110,6 +113,7 @@ component SearchField: Rectangle {
         color: Theme.textPrimary
         selectByMouse: true
         clip: true
+        Accessible.name: searchField.accessibleName
         onAccepted: searchField.searchRequested(text)
     }
 

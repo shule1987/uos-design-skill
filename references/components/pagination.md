@@ -60,27 +60,32 @@ component Pagination: Row {
         }
 
         delegate: Rectangle {
+            id: pageButton
             width: modelData === "..." ? 32 : 32
             height: 32
             radius: Theme.radiusSm
+            activeFocusOnTab: modelData !== "..."
             color: {
-                if (modelData === pagination.current) return Theme.accent
+                if (modelData === pagination.current) return Theme.accentBackground
                 if (hovered && modelData !== "...") return Theme.surfaceHover
                 return "transparent"
             }
 
             property bool hovered: false
+            Accessible.name: modelData === "..."
+                ? qsTr("省略页码")
+                : qsTr("第 %1 页").arg(modelData)
 
             Text {
                 anchors.centerIn: parent
                 text: modelData
                 font.pixelSize: 13
-                color: modelData === pagination.current ? "#FFFFFF" : Theme.textPrimary
+                color: modelData === pagination.current ? Theme.onAccent : Theme.textPrimary
             }
 
             HoverHandler {
                 enabled: modelData !== "..."
-                onHoveredChanged: parent.hovered = hovered
+                onHoveredChanged: pageButton.hovered = hovered
             }
 
             TapHandler {
@@ -90,8 +95,20 @@ component Pagination: Row {
                     pagination.pageChanged(modelData)
                 }
             }
+            Keys.onReturnPressed: {
+                if (modelData === "..." || modelData === pagination.current)
+                    return
+                pagination.current = modelData
+                pagination.pageChanged(modelData)
+            }
+            Keys.onSpacePressed: {
+                if (modelData === "..." || modelData === pagination.current)
+                    return
+                pagination.current = modelData
+                pagination.pageChanged(modelData)
+            }
 
-            Behavior on color { ColorAnimation { duration: 80 } }
+            Behavior on color { ColorAnimation { duration: Theme.animFast } }
         }
     }
 

@@ -1,6 +1,6 @@
 ---
 name: uos-design
-description: Reference a UOS and Deepin style QML design system for DTK-first desktop UI work. Use when designing, implementing, or reviewing theme tokens, layout, window behavior, blur effects, or common desktop components.
+description: Reference a UOS and Deepin style QML design system for DTK-first desktop UI work on Linux desktops. Use when designing, implementing, or reviewing theme tokens, layout, window behavior, platform compatibility, blur effects, or common desktop components.
 ---
 
 # UOS Design
@@ -20,11 +20,12 @@ Do not use this skill for generic web design unless the user explicitly wants th
 
 ## Workflow
 
-1. Route the request with `references/design-system-modular.yaml`.
+1. Route the request with `references/design-system-modular.yaml` and `references/platform-compatibility.md`.
 2. Read only the files needed for the task.
 3. Prefer DTK native controls before custom implementations.
-4. Reuse documented tokens instead of inventing new values.
-5. Treat blur and heavy effects as progressive enhancement, not a hard dependency.
+4. Default to system-managed windows and popups; only use frameless chrome, `Popup.Window`, or blur when the target Qt/DTK/platform combination supports them.
+5. Reuse documented tokens instead of inventing new values.
+6. Verify that any token, property, or component name used in an answer is defined in the referenced files.
 
 ## File Routing
 
@@ -37,6 +38,8 @@ Start with the smallest relevant set:
   - `references/foundations/animation.md`
 - Global rules:
   - `references/design-rules.md`
+- Platform compatibility:
+  - `references/platform-compatibility.md`
 - Layout and windows:
   - `references/design-system-layout.md`
   - `references/design-system-window-behavior.md`
@@ -75,8 +78,10 @@ Start with the smallest relevant set:
 ## Implementation Rules
 
 - Prefer `org.deepin.dtk` controls when they satisfy the request.
+- Prefer system-managed title bars and popups unless the request clearly benefits from custom desktop chrome.
 - Keep color and spacing choices aligned with the documented theme tokens.
 - Preserve keyboard navigation, focus states, and contrast requirements.
+- State any Qt/DTK version or Wayland/X11 assumptions when they affect windowing, popup behavior, blur, or drag handling.
 - Use the window and title-bar rules for desktop shells instead of inventing new chrome.
 - When a requested component is not documented, say so plainly instead of pretending it exists.
 
@@ -85,14 +90,16 @@ Start with the smallest relevant set:
 If documents disagree, use this order:
 
 1. `references/foundations/*.md` and `references/components/*.md`
-2. `references/design-rules.md`
-3. `references/design-system-layout.md` and `references/design-system-window-behavior.md`
-4. `references/design-system-quick-reference.md`
-5. `references/design-system-modular.yaml` for routing and indexing only
+2. `references/platform-compatibility.md`
+3. `references/design-rules.md`
+4. `references/design-system-layout.md` and `references/design-system-window-behavior.md`
+5. `references/design-system-quick-reference.md`
+6. `references/design-system-modular.yaml` for routing and indexing only
 
 ## Response Guidance
 
 - Cite the exact files you used.
 - Keep answers implementation-oriented.
+- Call out Qt/DTK version constraints and Wayland/X11 assumptions when they matter.
 - When reviewing UI code, call out mismatches against the documented tokens or rules.
 - When generating new QML, follow the naming and state conventions already documented here.

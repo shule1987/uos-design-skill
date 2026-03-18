@@ -6,9 +6,22 @@ inclusion: manual
 
 ## 主题模式
 ```qml
+property string mode: "system" // "system" | "light" | "dark"
+
 readonly property bool dark: mode === "dark" ||
     (mode === "system" && Qt.styleHints.colorScheme === Qt.ColorScheme.Dark)
 ```
+
+## DTK / 系统调色板映射
+- 优先把下列 token 绑定到 DTK 或系统调色板。
+- 文档中的字面量色值是自定义组件的 fallback，不应优先覆盖系统主题。
+- 根据参考图，交互色分成 4 个语义层级：
+  - 普通状态
+  - 悬停 / 强调状态
+  - 激活状态前景
+  - 激活状态背景
+- 不要把纯黑 / 纯白作为默认正文色；它们更适合强调、悬停或高对比标题。
+- 所有蓝色语义都必须从 `systemAccent` 派生，不直接在业务组件中写死蓝色值。
 
 ## 背景色
 
@@ -18,6 +31,7 @@ readonly property color bg: dark ? "#141414" : "#F5F5F7"
 readonly property color bgPanel: dark ? "#1C1C1E" : "#FFFFFF"
 readonly property color bgToolbar: dark ? "#1C1C1E" : "#FFFFFF"
 readonly property color cardBg: dark ? Qt.rgba(0.16, 0.16, 0.16, 0.96) : Qt.rgba(1, 1, 1, 0.995)
+readonly property color cardThumbBg: dark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.04)
 ```
 
 ### Veyan 风格
@@ -51,27 +65,47 @@ readonly property color scrim: dark ? Qt.rgba(0, 0, 0, 0.30) : Qt.rgba(0, 0, 0, 
 readonly property color border: dark ? Qt.rgba(1,1,1,0.08) : Qt.rgba(0,0,0,0.08)
 readonly property color borderStrong: dark ? Qt.rgba(1,1,1,0.14) : Qt.rgba(0,0,0,0.14)
 readonly property color divider: dark ? Qt.rgba(1,1,1,0.08) : Qt.rgba(0,0,0,0.08)
+readonly property color focusRing: accentForeground
+```
+
+## 语义前景色
+```qml
+readonly property color previewAccent: dark ? "#1D56C6" : "#3678E6"
+
+// 生产代码必须绑定到 DTK / 系统活动色；previewAccent 仅用于文档预览
+property color systemAccent: previewAccent
+
+readonly property color fgNormal: dark ? "#BFBFC4" : "#575757"
+readonly property color fgStrong: dark ? "#F3F3F5" : "#111111"
+readonly property color accentForeground: dark
+    ? Qt.lighter(systemAccent, 1.18)
+    : Qt.darker(systemAccent, 1.12)
+readonly property color accentBackground: systemAccent
+readonly property color onAccent: "#FFFFFF"
 ```
 
 ## 文字色
 ```qml
-readonly property color textPrimary: dark ? "#FFFFFF" : Qt.rgba(0, 0, 0, 1.0)
-readonly property color textSecondary: dark ? Qt.rgba(1,1,1,0.7) : Qt.rgba(0, 0, 0, 0.70)
-readonly property color textMuted: dark ? Qt.rgba(1,1,1,0.4) : Qt.rgba(0, 0, 0, 0.70)
-readonly property color textDisabled: dark ? Qt.rgba(1,1,1,0.25) : Qt.rgba(0,0,0,0.25)
-readonly property color placeholder: dark ? "#5a5a72" : "#9090a8"
+readonly property color textPrimary: fgNormal
+readonly property color textStrong: fgStrong
+readonly property color textSecondary: dark ? "#9C9CA2" : "#767676"
+readonly property color textMuted: dark ? "#727278" : "#A1A1A6"
+readonly property color textDisabled: dark ? "#5C5C61" : "#C2C2C7"
+readonly property color placeholder: textMuted
+readonly property color linkText: accentForeground
 ```
 
 ## 强调色
 ```qml
-readonly property string accentPreset: "unote"  // "unote" or "veyan"
-
-readonly property color accent: accentPreset === "veyan" ? "#2563eb" : "#0081FF"
-readonly property color accentLight: accentPreset === "veyan" ? "#60a5fa" : "#4DABFF"
-readonly property color accentDark: accentPreset === "veyan" ? "#1d4ed8" : "#0062CC"
-readonly property color accentGlow: accentPreset === "veyan"
-    ? Qt.rgba(0.14, 0.39, 0.92, 0.35)
-    : Qt.rgba(0.00, 0.51, 1.00, 0.25)
+readonly property color accent: accentBackground
+readonly property color accentLight: Qt.lighter(systemAccent, dark ? 1.14 : 1.08)
+readonly property color accentDark: Qt.darker(systemAccent, dark ? 1.16 : 1.12)
+readonly property color accentGlow: Qt.rgba(
+    systemAccent.r,
+    systemAccent.g,
+    systemAccent.b,
+    dark ? 0.30 : 0.22
+)
 ```
 
 ## 功能色
@@ -83,8 +117,24 @@ readonly property color danger: dark ? "#F44336" : "#e05555"
 
 ## 图标色
 ```qml
-readonly property color iconNormal: dark ? Qt.rgba(1,1,1,0.70) : Qt.rgba(0,0,0,0.80)
-readonly property color iconHover: dark ? "#f0f0f5" : "#333333"
+readonly property color iconNormal: fgNormal
+readonly property color iconStrong: fgStrong
+readonly property color iconHover: fgStrong
+readonly property color iconAccent: accentForeground
+```
+
+## 标题栏与标签页
+```qml
+readonly property color titlebarBg: bgPanel
+readonly property color titlebarHover: dark ? Qt.rgba(1,1,1,0.10) : Qt.rgba(0,0,0,0.08)
+readonly property color titlebarActive: dark ? Qt.rgba(1,1,1,0.14) : Qt.rgba(0,0,0,0.12)
+
+readonly property color tabActive: dark ? Qt.rgba(1,1,1,0.12) : Qt.rgba(0,0,0,0.08)
+readonly property color tabHover: dark ? Qt.rgba(1,1,1,0.08) : Qt.rgba(0,0,0,0.05)
+readonly property color tabInactive: "transparent"
+readonly property color itemHover: surfaceHover
+readonly property color selectionFill: accentBackground
+readonly property color selectionText: onAccent
 ```
 
 ## 颜色工具函数

@@ -44,7 +44,7 @@ component ProgressBar: Rectangle {
         height: parent.height
         radius: parent.radius
         width: parent.width * progressBar.value
-        color: Theme.accent
+        color: Theme.accentBackground
 
         Behavior on width {
             NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
@@ -64,6 +64,7 @@ component CircularProgress: Item {
     height: size
 
     Canvas {
+        id: canvas
         anchors.fill: parent
         onPaint: {
             const ctx = getContext("2d")
@@ -81,7 +82,7 @@ component CircularProgress: Item {
 
             ctx.beginPath()
             ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * circular.value)
-            ctx.strokeStyle = Theme.accent
+            ctx.strokeStyle = Theme.accentBackground
             ctx.lineWidth = 4
             ctx.lineCap = "round"
             ctx.stroke()
@@ -89,5 +90,33 @@ component CircularProgress: Item {
     }
 
     onValueChanged: canvas.requestPaint()
+}
+```
+
+## BusyIndicator
+```qml
+component BusyIndicator: Item {
+    id: busy
+    property int size: 20
+    property bool running: true
+
+    width: size
+    height: size
+    opacity: running ? 1 : 0
+
+    AppIcon {
+        anchors.centerIn: parent
+        name: "loader"
+        size: busy.size
+        color: Theme.accentForeground
+    }
+
+    RotationAnimation on rotation {
+        from: 0
+        to: 360
+        duration: 900
+        loops: Animation.Infinite
+        running: busy.running
+    }
 }
 ```

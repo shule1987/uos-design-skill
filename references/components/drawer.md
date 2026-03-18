@@ -34,7 +34,9 @@ component Drawer: Item {
     property int size: 360
 
     anchors.fill: parent
+    focus: open
     visible: open || drawerRect.x !== hiddenX || drawerRect.y !== hiddenY
+    Keys.onEscapePressed: drawer.open = false
 
     readonly property real hiddenX: {
         if (placement === "left") return -size
@@ -66,6 +68,7 @@ component Drawer: Item {
         width: placement === "left" || placement === "right" ? drawer.size : parent.width
         height: placement === "top" || placement === "bottom" ? drawer.size : parent.height
         color: Theme.bgPanel
+        Accessible.name: qsTr("抽屉面板")
 
         x: {
             if (placement === "left") return drawer.open ? 0 : -width
