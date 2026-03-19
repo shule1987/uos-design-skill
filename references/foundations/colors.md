@@ -122,6 +122,9 @@ readonly property color danger: dark ? "#F44336" : "#e05555"
 ```
 
 ## 图标色
+- `Theme.iconNormal`、`Theme.iconStrong`、`Theme.iconAccent` 用于交互图标语义。
+- `Theme.textMuted` 属于次要文字语义，不应用作默认导航、工具栏、按钮或列表操作图标色。
+- 颜色字面量应尽量只保留在中心主题文件中；页面和组件优先消费这些图标 token，而不是自己写死颜色。
 ```qml
 readonly property color iconNormal: fgNormal
 readonly property color iconStrong: fgStrong

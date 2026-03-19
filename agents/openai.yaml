@@ -1,4 +1,4 @@
 interface:
   display_name: "UOS Design"
   short_description: "UOS and Deepin style QML design system guidance"
-  default_prompt: "Use $uos-design to design, implement, or review a UOS or Deepin style QML desktop UI with DTK-first conventions."
+  default_prompt: "Use $uos-design to design, implement, or review a UOS or Deepin style QML desktop UI. Inspect local Qt/DTK availability first, run scripts/audit_uos_qml.sh before and after edits, use org.deepin.dtk controls when available, and treat non-DTK styles, frameless windows, page-level hex colors, and wrong icon tokens as blockers unless explicitly waived."
