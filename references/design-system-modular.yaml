@@ -4,8 +4,8 @@
 # 日期: 2026-03-18
 
 metadata:
-  version: "2.1"
-  date: "2026-03-18"
+  version: "2.2"
+  date: "2026-03-20"
   structure: modular
   projects: [Unote, Veyan]
 
@@ -62,6 +62,10 @@ components:
   sidebar:
     file: references/components/sidebar.md
     components: [Sidebar]
+
+  control_center_sidebar:
+    file: references/components/control-center-sidebar.md
+    patterns: [ControlCenterSidebar]
 
   switch:
     file: references/components/switch.md
@@ -166,7 +170,7 @@ quick_find:
 
   components_by_category:
     input: [TextField, SearchField, ComboBox]
-    navigation: [Sidebar, TabItem, PopupMenu, Breadcrumb]
+    navigation: [Sidebar, ControlCenterSidebar, TabItem, PopupMenu, Breadcrumb]
     feedback: [Dialog, Tooltip, Toast, Badge, Alert, Notification, Drawer]
     display: [Card, ListItem, ProgressBar, CircularProgress, BusyIndicator, Table, Avatar, AvatarGroup, Skeleton, SkeletonGroup, Empty]
     control: [BaseButton, IconButton, NavButton, Switch, CheckBox, RadioButton, Slider]
@@ -174,8 +178,8 @@ quick_find:
 
 # 使用统计
 statistics:
-  total_reference_files: 37
+  total_reference_files: 38
   foundation_files: 5
-  component_files: 26
-  total_components: 38
+  component_files: 27
+  total_components: 39
   total_colors: "40+"

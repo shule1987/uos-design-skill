@@ -11,8 +11,9 @@ inclusion: manual
 - 字体默认跟随系统 UI 字体和系统字号层级；不要在常规业务界面里写死字体族或固定 px 字号。
 
 ### 导入主题
-- 在主题对象中统一暴露 `Theme.bg`、`Theme.textPrimary`、`Theme.fontSans`、`Theme.bodySize` 等 token。
-- 普通业务界面直接消费主题 token，不在业务组件里重复定义颜色、字号和圆角。
+- 在主题对象中统一暴露 `Theme.bg`、`Theme.textPrimary`、`Theme.fontSans`、`Theme.bodySize` 等主题变量。
+- 这里的“主题变量”指 `Theme` 对象上的命名属性，例如颜色变量、字号变量、圆角变量和间距变量。
+- 普通业务界面直接消费这些主题变量，不在业务组件里重复定义颜色、字号和圆角。
 - `Theme.fontSans` 和 `Theme.bodySize` 应绑定到系统字体与系统字号层级，而不是写死具体数值。
 
 ---
@@ -155,12 +156,12 @@ inclusion: manual
 - 使用 `Behavior` 而非手动堆叠过多动画对象。
 - 使用 `Loader` 延迟加载重型组件。
 - 避免深层嵌套绑定和频繁重算。
-- 对只读主题 token 使用 `readonly property`。
+- 对只读主题变量使用 `readonly property`。
 
 ### 避免做法
 - 不要在循环中创建大量对象。
 - 避免频繁调用 `grabToImage`。
-- 不要把 blur 当作默认必选项。
+- 除承担桌面主导航的持久左侧栏外，不要把 blur 当作所有界面的默认必选项。
 - 避免把复杂业务逻辑直接塞进属性绑定。
 
 ---
