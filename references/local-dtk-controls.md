@@ -37,12 +37,16 @@ import org.deepin.dtk.settings 1.0 as Settings
   - `D.AboutDialog`
   - `Settings.SettingsDialog`
 - 输入与常用控件：
+  - `D.ButtonBox`
+  - `D.ButtonGroup`
   - `D.SearchEdit`
   - `D.LineEdit`
   - `D.PasswordEdit`
   - `D.ComboBox`
   - `D.Switch`
   - `D.CheckBox`
+  - `D.ControlGroup`
+  - `D.ControlGroupItem`
   - `D.ProgressBar`
   - `D.RecommandButton`
   - `D.WarningButton`
@@ -89,6 +93,12 @@ import org.deepin.dtk.settings 1.0 as Settings
 ### 6. 搜索输入
 
 - 侧栏或页面顶部搜索框默认使用 `D.SearchEdit`，不要自己拼一个 `LineEdit + icon`。
+
+### 7. 互斥按钮组
+
+- 当两个及以上互斥过滤、模式或状态按钮需要成组出现，且本机已导出 `D.ButtonBox`、`D.ButtonGroup` 或 `D.ControlGroup` 时，默认优先使用这些 DTK 组按钮路径。
+- 默认保持整组按钮在一行内完整显示；不要把互斥选项做成散装 `D.Button` / `D.ToolButton` 列表，也不要让整组自动换行成多行。
+- 只有在窗口宽度、平台限制或本机控件缺陷被明确证明时，才允许偏离这一规则，并且必须写 `uos-design: allow-wrapped-mutually-exclusive-group`。
 
 ## 直接禁用的误用
 

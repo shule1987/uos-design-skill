@@ -95,6 +95,7 @@ It reports blocking findings for:
 - search/filter bands where the search control does not clearly dominate the layout share
 - variable-length file/app/data list rows or reusable cards that allow wrapped text to sprawl beyond a compact 1-2 line baseline
 - variable-length file/app/program/startup/service/data page lists that still use per-item standalone cards or legacy oversized settings-row templates instead of compact responsive rows
+- mutually exclusive filter/mode/state button sets that ignore local DTK grouped-button controls or wrap across multiple rows without waivers
 - one surface rendering the same numeric ratio through both circular/ring progress and horizontal progress
 - popup-style `D.Dialog` usage in desktop app code when local `DialogWindow` exists and no waiver explains the exception
 - `DialogButtonBox` usage inside app dialog code even though the local `DialogWindow` standard path expects DTK button rows
@@ -4222,6 +4223,215 @@ detect_vertical_action_stack_hits() {
     ' "$file"
 }
 
+detect_mutually_exclusive_button_group_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function is_group_start(s) {
+            return s ~ /^[[:space:]]*(D\.)?(ButtonBox|ButtonGroup|ControlGroup)[[:space:]]*\{/
+        }
+
+        function is_container_start(s) {
+            return s ~ /^[[:space:]]*(Flow|Row|RowLayout|Column|ColumnLayout)[[:space:]]*\{/
+        }
+
+        function is_button_start(s) {
+            return s ~ /^[[:space:]]*((D\.)?(ToolButton|Button|RecommandButton|WarningButton)|QQC\.Button|Button)[[:space:]]*\{/
+        }
+
+        function container_kind(line) {
+            if (line ~ /^[[:space:]]*Flow[[:space:]]*\{/)
+                return "Flow"
+            if (line ~ /^[[:space:]]*RowLayout[[:space:]]*\{/)
+                return "RowLayout"
+            if (line ~ /^[[:space:]]*Row[[:space:]]*\{/)
+                return "Row"
+            if (line ~ /^[[:space:]]*ColumnLayout[[:space:]]*\{/)
+                return "ColumnLayout"
+            return "Column"
+        }
+
+        function extract_compare_prop(line,   tmp, start, i, c, ch, prop) {
+            tmp = line
+            sub(/^[^:]*:[[:space:]]*/, "", tmp)
+            if (match(tmp, /===?/)) {
+                start = RSTART - 1
+                while (start > 0 && substr(tmp, start, 1) ~ /[[:space:]]/)
+                    start--
+                if (start <= 0)
+                    return ""
+                i = start
+                while (i > 0) {
+                    ch = substr(tmp, i, 1)
+                    if (ch ~ /[A-Za-z0-9_.]/)
+                        i--
+                    else
+                        break
+                }
+                prop = substr(tmp, i + 1, start - i)
+                if (prop ~ /^[A-Za-z_][A-Za-z0-9_.]*$/)
+                    return prop
+            }
+            return ""
+        }
+
+        function extract_assign_prop(line,   tmp, start, i, ch, prop) {
+            tmp = line
+            gsub(/===/, "", tmp)
+            gsub(/==/, "", tmp)
+            if (match(tmp, /=[[:space:]]*[^=]/)) {
+                start = RSTART - 1
+                while (start > 0 && substr(tmp, start, 1) ~ /[[:space:]]/)
+                    start--
+                if (start <= 0)
+                    return ""
+                i = start
+                while (i > 0) {
+                    ch = substr(tmp, i, 1)
+                    if (ch ~ /[A-Za-z0-9_.]/)
+                        i--
+                    else
+                        break
+                }
+                prop = substr(tmp, i + 1, start - i)
+                if (prop ~ /^[A-Za-z_][A-Za-z0-9_.]*$/)
+                    return prop
+            }
+            return ""
+        }
+
+        function push_group(level) {
+            group_top++
+            group_level[group_top] = level
+        }
+
+        function pop_group() {
+            delete group_level[group_top]
+            group_top--
+        }
+
+        function push_container(kind, level, start_line) {
+            container_top++
+            container_kind_stack[container_top] = kind
+            container_level[container_top] = level
+            container_start[container_top] = start_line
+        }
+
+        function pop_container(   kind, start_line, key, parts, idx, count, best_count) {
+            kind = container_kind_stack[container_top]
+            start_line = container_start[container_top]
+            best_count = 0
+
+            for (key in container_prop_count) {
+                split(key, parts, SUBSEP)
+                idx = parts[1] + 0
+                if (idx != container_top)
+                    continue
+                count = container_prop_count[key]
+                if (count > best_count)
+                    best_count = count
+            }
+
+            if (best_count >= 2) {
+                if (kind == "Flow") {
+                    printf "%s: mutually exclusive buttons must use a DTK grouped-button control and stay on one row; do not place them in Flow\n", start_line
+                } else if (kind == "Column" || kind == "ColumnLayout") {
+                    printf "%s: mutually exclusive buttons must use a DTK grouped-button control and remain on one horizontal row; do not stack them vertically\n", start_line
+                } else {
+                    printf "%s: mutually exclusive buttons are implemented as standalone buttons; prefer D.ButtonBox / D.ButtonGroup / D.ControlGroup\n", start_line
+                }
+            }
+
+            for (key in container_prop_count) {
+                split(key, parts, SUBSEP)
+                idx = parts[1] + 0
+                if (idx == container_top)
+                    delete container_prop_count[key]
+            }
+
+            delete container_kind_stack[container_top]
+            delete container_level[container_top]
+            delete container_start[container_top]
+            container_top--
+        }
+
+        function reset_button() {
+            in_button = 0
+            button_depth = 0
+            button_container = 0
+            button_checked_prop = ""
+            button_assign_prop = ""
+            button_checkable = 0
+        }
+
+        BEGIN {
+            nest = 0
+            group_top = 0
+            container_top = 0
+            reset_button()
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+            next_nest = nest + delta
+
+            if (group_top == 0 && is_container_start(line))
+                push_container(container_kind(line), next_nest, NR)
+
+            if (is_group_start(line))
+                push_group(next_nest)
+
+            if (group_top == 0 && container_top > 0 && !in_button && is_button_start(line)) {
+                in_button = 1
+                button_depth = 0
+                button_container = container_top
+                button_checked_prop = ""
+                button_assign_prop = ""
+                button_checkable = 0
+            }
+
+            if (in_button) {
+                if (button_depth == 1 && line ~ /^[[:space:]]*checked[[:space:]]*:/)
+                    button_checked_prop = extract_compare_prop(line)
+                if (button_depth == 1 && line ~ /^[[:space:]]*checkable[[:space:]]*:[[:space:]]*true([[:space:]]*(\/\/.*)?$)/)
+                    button_checkable = 1
+                if (line ~ /onClicked[[:space:]]*:/ && button_assign_prop == "")
+                    button_assign_prop = extract_assign_prop(line)
+
+                button_depth += delta
+                if (button_depth <= 0) {
+                    prop = button_checked_prop
+                    if (prop == "" && button_checkable)
+                        prop = button_assign_prop
+                    if (prop != "")
+                        container_prop_count[button_container, prop]++
+                    reset_button()
+                }
+            }
+
+            nest = next_nest
+
+            while (group_top > 0 && nest < group_level[group_top])
+                pop_group()
+
+            while (container_top > 0 && nest < container_level[container_top])
+                pop_container()
+        }
+
+        END {
+            while (container_top > 0)
+                pop_container()
+        }
+    ' "$file"
+}
+
 detect_custom_dialog_content_style_hits() {
     local file="$1"
     awk '
@@ -4842,6 +5052,15 @@ while IFS= read -r -d '' file; do
             [[ -z "$hit" ]] && continue
             log_fail "wide-button" "$rel:$hit"
         done < <(detect_wide_button_hits "$file")
+    fi
+
+    if ! grep -q 'uos-design: allow-wrapped-mutually-exclusive-group' "$file"; then
+        if (( dtk_available )) && { dtk_has_export ButtonBox || dtk_has_export ButtonGroup || dtk_has_export ControlGroup; }; then
+            while IFS= read -r hit; do
+                [[ -z "$hit" ]] && continue
+                log_fail "mutually-exclusive-button-group" "$rel:$hit"
+            done < <(detect_mutually_exclusive_button_group_hits "$file")
+        fi
     fi
 
     if ! grep -q 'uos-design: allow-horizontal-list-scroll' "$file"; then
