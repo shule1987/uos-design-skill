@@ -4,7 +4,9 @@ inclusion: manual
 
 # 标签页组件
 
-- 优先使用 DTK 标签栏；自定义标签页主要用于浏览器式或文档式主窗口。
+- `TabBar` 优先用于文档式、浏览器式或局部分段标签，不用于主窗口 header 工具栏里的主页面切换。
+- 所有用于主页面切换的 header 控件，一律放在 DTK 二合一 header 工具栏里，通过 `D.TitleBar.content` 承载，并使用本机可用的 `ButtonBox` / `ButtonGroup` / `ControlGroup` 一类互斥按钮组路径。
+- 页面内容区内的标签只用于局部内容分段，不用于主页面切换。
 
 ## TabItem
 

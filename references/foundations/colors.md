@@ -50,6 +50,7 @@ readonly property bool dark: mode === "dark" ||
 - **对话框背景**：浅色主题使用 `rgba(240, 240, 240, 0.70)`，对应基色 `#F0F0F0`；深色主题使用 `rgba(24, 24, 24, 0.70)`，对应基色 `#181818`。用于模态对话框、浮层面板等需要轻微通透感的容器背景。
 - **侧边栏背景**：浅色主题使用 `rgba(255, 255, 255, 0.80)`；深色主题使用 `rgba(16, 16, 16, 0.80)`，对应基色 `#101010`。用于导航侧栏、资源面板等附属区域背景。
 - **菜单背景**：浅色主题使用 `rgba(238, 238, 238, 0.80)`，对应基色 `#EEEEEE`；深色主题使用 `rgba(24, 24, 24, 0.80)`，对应基色 `#181818`。用于菜单、快捷操作面板等轻量弹出层背景。
+- **卡片基础背景**：最底层内容卡片优先从主窗口背景 `bg` 派生一个中性亮度上浮约 `20%` 的颜色，而不是直接拿更重的面板色。换言之，默认先尝试 `Qt.lighter(bg, 1.2)` 或等效的中性 +20% 提亮，再根据层级决定是否需要更强表面色。
 - **Hover 背景**：浅色主题使用 `rgba(0, 0, 0, 0.10)`，深色主题使用 `rgba(255, 255, 255, 0.10)`。用于列表项、按钮、菜单项等组件在鼠标悬停时的背景反馈。
 - **侧边栏 blur 混色**：浅色主题默认使用接近 `rgba(255, 255, 255, 0.80)` 的中性白玻璃，深色主题默认使用接近 `rgba(16, 16, 16, 0.80)` 的中性黑玻璃。透明度过高会把 blur 压成实心色块，颜色带明显色偏会直接偏离 UOS / Deepin 基线。
 
@@ -57,7 +58,7 @@ readonly property bool dark: mode === "dark" ||
 readonly property color bg: dark ? "#181818" : "#F8F8F8"
 readonly property color bgPanel: dark ? Qt.rgba(16/255, 16/255, 16/255, 0.80) : Qt.rgba(1, 1, 1, 0.80)
 readonly property color bgToolbar: bgPanel
-readonly property color cardBg: dark ? Qt.rgba(24/255, 24/255, 24/255, 0.70) : Qt.rgba(240/255, 240/255, 240/255, 0.70)
+readonly property color cardBg: Qt.lighter(bg, 1.2)
 readonly property color cardThumbBg: dark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)
 ```
 

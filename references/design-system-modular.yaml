@@ -13,7 +13,7 @@ metadata:
 platform:
   compatibility:
     file: references/platform-compatibility.md
-    exports: [dtkFirst, customTitlebarDefault, systemDecorationsFallback, popupWindowQt68, blurFallback]
+    exports: [dtkFirst, dtkUnifiedHeaderRequired, noSystemTitlebarMainWindow, popupWindowQt68, blurFallback]
 
 # 基础系统
 foundations:
@@ -164,7 +164,7 @@ quick_find:
 
   platform:
     toolkit: [dtkFirst]
-    windows: [customTitlebarDefault, systemDecorationsFallback]
+    windows: [dtkUnifiedHeaderRequired, noSystemTitlebarMainWindow]
     popups: [Popup.Item, popupWindowQt68]
     effects: [blurFallback]
 

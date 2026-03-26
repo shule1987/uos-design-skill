@@ -12,6 +12,8 @@ It reports blocking findings for:
 - WindowButtonGroup clusters offset away from the actual top-right edge
 - titlebar content or drag zones that span the full D.TitleBar width without reserving the DTK trailing control strip
 - D.TitleBar or WindowButtonGroup paths nested inside clipped ancestors that can crop top-right controls when maximized
+- main windows that omit the DTK standard header, omit D.TitleBar.menu, or omit D.WindowButtonGroup
+- main windows whose explicit window flags drop minimize, maximize, or close button hints required by the DTK header strip
 - DTK main windows that still use Qt.CustomizeWindowHint or explicitly drop Qt.WindowTitleHint from the title-bar flag set
 - transparent DTK main windows whose live title-band background is left visually transparent instead of using a theme surface token
 - transparent DTK main windows whose right-side content base surface starts only below the title-band height, leaving the toolbar to blend against the desktop
@@ -20,7 +22,6 @@ It reports blocking findings for:
 - transparent top-level windows without an explicit theme-backed base surface
 - full-window opaque base surfaces placed underneath blurred persistent sidebars
 - Popup.Window usage without waivers
-- full-width D.TitleBar in persistent-left-sidebar applications
 - sidebar components that never establish an explicit sidebar panel surface
 - persistent-sidebar splits that leave a visible seam or consume width between sidebar and content instead of keeping zero gap with a divider on the sidebar edge
 - single-group sidebars that still render a group header, or multi-group sidebar groups that do not keep a 20px gap
@@ -44,6 +45,7 @@ It reports blocking findings for:
 - standalone in-content settings buttons when the app already exposes a main menu
 - oversized card shells with obviously large fixed heights
 - focal card content that binds to zero-padding card edges without an inner safe area
+- auto-generated structural thumbnails that appear in cards without an explicit subdued mode
 - focal graphic wrappers that advertise less height than the contained focal visual and therefore collapse surrounding spacing
 - fill-anchored layout children inside column-flow card primitives that rely on Layout.fillHeight spacers and therefore bypass the card sizing flow
 - repeated functional-row delegates that hardcode one literal bundled icon for all rows
@@ -56,6 +58,8 @@ It reports blocking findings for:
 - selected sidebar items that add a border or outline
 - persistent-sidebar collapse toggles that use generic chevrons or arrows
 - moving or duplicated top-left logo slots across sidebar expand/collapse
+- persistent-sidebar top bands that paint a standalone full-width titleband surface instead of carrying the left and right panel surfaces up to the top edge
+- persistent-sidebar sidebars that duplicate a second app brand block above navigation even though the DTK header already owns the logo slot
 - unified-toolbar page titles that were not explicitly requested
 - detailed center text inside rings, gauges, or chart-center overlays
 - oversized default desktop window shells
@@ -480,7 +484,7 @@ file_has_root_application_window() {
         /^[[:space:]]*$/ { next }
         /^[[:space:]]*\/\// { next }
         {
-            if ($0 ~ /^[[:space:]]*((D\.)?ApplicationWindow|Window)[[:space:]]*\{/) {
+            if ($0 ~ /^[[:space:]]*(([A-Za-z_][A-Za-z0-9_]*\.)?ApplicationWindow|([A-Za-z_][A-Za-z0-9_]*\.)?Window)[[:space:]]*\{/) {
                 print "yes"
             }
             exit
@@ -577,10 +581,13 @@ detect_full_window_blur_hits() {
         }
 
         BEGIN {
+            nest = 0
             in_blur = 0
             blur_depth = 0
             blur_start = 0
+            blur_parent_nest = 0
             blur_fill_parent = 0
+            blur_control = ""
         }
 
         {
@@ -591,22 +598,31 @@ detect_full_window_blur_hits() {
                 in_blur = 1
                 blur_depth = 0
                 blur_start = NR
+                blur_parent_nest = nest
                 blur_fill_parent = 0
+                blur_control = ""
             }
 
             if (in_blur) {
                 if (line ~ /anchors\.fill[[:space:]]*:[[:space:]]*parent/) {
                     blur_fill_parent = 1
                 }
+                if (blur_depth == 1 && line ~ /^[[:space:]]*control[[:space:]]*:/) {
+                    blur_control = line
+                }
 
                 blur_depth += delta
+                nest += delta
                 if (blur_depth <= 0) {
-                    if (blur_fill_parent) {
+                    if (blur_fill_parent && blur_parent_nest <= 2 && blur_control !~ /sidebar|headerSidebarSurface|leftPanel|sidebarSurface/i) {
                         print blur_start ": StyledBehindWindowBlur fills parent"
                     }
                     in_blur = 0
                 }
+                next
             }
+
+            nest += delta
         }
     ' "$file"
 }
@@ -774,6 +790,154 @@ detect_window_button_group_placement_hits() {
     ' "$file"
 }
 
+detect_required_main_window_header_hits() {
+    local file="$1"
+    if [[ "$(file_has_root_application_window "$file")" != "yes" ]]; then
+        return
+    fi
+
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function root_window_start(s) {
+            return s ~ /^[[:space:]]*(([A-Za-z_][A-Za-z0-9_]*\.)?ApplicationWindow|([A-Za-z_][A-Za-z0-9_]*\.)?Window)[[:space:]]*\{/
+        }
+
+        function numeric_value(s, name,   value) {
+            if (s ~ ("^[[:space:]]*" name "[[:space:]]*:[[:space:]]*[0-9]+([[:space:]]*(//.*)?$)")) {
+                value = s
+                sub(/.*:[[:space:]]*/, "", value)
+                gsub(/[^0-9]/, "", value)
+                return value + 0
+            }
+
+            return -1
+        }
+
+        BEGIN {
+            root_seen = 0
+            root_depth = 0
+            root_start = 0
+            in_titlebar = 0
+            titlebar_depth = 0
+            titlebar_start = 0
+            current_titlebar_has_menu = 0
+            has_titlebar = 0
+            has_titlebar_menu = 0
+            has_window_button_group = 0
+            min_width = -1
+            max_width = -1
+            min_height = -1
+            max_height = -1
+            has_flags = 0
+            has_minimize_hint = 0
+            has_maximize_hint = 0
+            has_close_hint = 0
+            disables_dtk_window = 0
+        }
+
+        /^[[:space:]]*(import|pragma)([[:space:]]|$)/ && !root_seen { next }
+        /^[[:space:]]*$/ && !root_seen { next }
+        /^[[:space:]]*\/\// && !root_seen { next }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!root_seen) {
+                if (root_window_start(line)) {
+                    root_seen = 1
+                    root_depth = 0
+                    root_start = NR
+                } else {
+                    exit
+                }
+            }
+
+            if (root_depth == 1) {
+                value = numeric_value(line, "minimumWidth")
+                if (value >= 0)
+                    min_width = value
+
+                value = numeric_value(line, "maximumWidth")
+                if (value >= 0)
+                    max_width = value
+
+                value = numeric_value(line, "minimumHeight")
+                if (value >= 0)
+                    min_height = value
+
+                value = numeric_value(line, "maximumHeight")
+                if (value >= 0)
+                    max_height = value
+
+                if (line ~ /^[[:space:]]*flags[[:space:]]*:/) {
+                    has_flags = 1
+                    if (line ~ /Qt\.WindowMinimizeButtonHint/ || line ~ /Qt\.WindowMinMaxButtonsHint/)
+                        has_minimize_hint = 1
+                    if (line ~ /Qt\.WindowMaximizeButtonHint/ || line ~ /Qt\.WindowMinMaxButtonsHint/)
+                        has_maximize_hint = 1
+                    if (line ~ /Qt\.WindowCloseButtonHint/)
+                        has_close_hint = 1
+                }
+
+                if (line ~ /^[[:space:]]*D\.DWindow\.enabled[[:space:]]*:[[:space:]]*false\b/)
+                    disables_dtk_window = 1
+
+                if (!in_titlebar && line ~ /D\.TitleBar[[:space:]]*\{/) {
+                    in_titlebar = 1
+                    titlebar_depth = 0
+                    titlebar_start = NR
+                    current_titlebar_has_menu = 0
+                    has_titlebar = 1
+                }
+            }
+
+            if (in_titlebar) {
+                if (line ~ /(^|[[:space:]])menu[[:space:]]*:/)
+                    current_titlebar_has_menu = 1
+                if (line ~ /D\.WindowButtonGroup[[:space:]]*\{/)
+                    has_window_button_group = 1
+
+                titlebar_depth += delta
+                if (titlebar_depth <= 0) {
+                    if (current_titlebar_has_menu)
+                        has_titlebar_menu = 1
+                    in_titlebar = 0
+                }
+            }
+
+            root_depth += delta
+            if (root_seen && root_depth <= 0) {
+                fixed_size = (min_width >= 0 && max_width >= 0 && min_height >= 0 && max_height >= 0 \
+                    && min_width == max_width && min_height == max_height)
+
+                if (!has_titlebar)
+                    printf "%s: main window must declare a DTK standard D.TitleBar header\n", root_start
+                if (!has_titlebar_menu)
+                    printf "%s: main window must attach the application menu through D.TitleBar.menu\n", (has_titlebar ? titlebar_start : root_start)
+                if (!has_window_button_group)
+                    printf "%s: main window must expose D.WindowButtonGroup inside the DTK header\n", (has_titlebar ? titlebar_start : root_start)
+                if (disables_dtk_window)
+                    printf "%s: main window must not disable DTK window chrome with D.DWindow.enabled: false\n", root_start
+
+                if (has_flags && !has_minimize_hint)
+                    printf "%s: explicit main-window flags omit the minimize button hint required by the DTK header strip\n", root_start
+                if (has_flags && !fixed_size && !has_maximize_hint)
+                    printf "%s: explicit main-window flags omit the maximize button hint required by the DTK header strip for resizable windows\n", root_start
+                if (has_flags && !has_close_hint)
+                    printf "%s: explicit main-window flags omit the close button hint required by the DTK header strip\n", root_start
+                exit
+            }
+        }
+    ' "$file"
+}
+
 detect_titlebar_safe_area_hits() {
     local file="$1"
     awk '
@@ -810,7 +974,7 @@ detect_titlebar_safe_area_hits() {
             line = $0
             delta = brace_delta(line)
 
-            if (!in_titlebar && line ~ /^[[:space:]]*D\.TitleBar[[:space:]]*\{/) {
+            if (!in_titlebar && line ~ /D\.TitleBar[[:space:]]*\{/) {
                 in_titlebar = 1
                 depth = 0
                 direct_mouse = 0
@@ -904,6 +1068,156 @@ detect_titlebar_safe_area_hits() {
                     reset_content()
                     direct_mouse = 0
                 }
+            }
+        }
+    ' "$file"
+}
+
+detect_centered_titlebar_content_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        BEGIN {
+            in_titlebar = 0
+            depth = 0
+            in_content = 0
+            content_depth = 0
+            content_start = 0
+            content_has_center = 0
+            content_has_group = 0
+            in_search = 0
+            search_depth = 0
+            search_fill_width = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_titlebar && line ~ /D\.TitleBar[[:space:]]*\{/) {
+                in_titlebar = 1
+                depth = 0
+                in_content = 0
+            }
+
+            if (in_titlebar) {
+                if (!in_content && depth == 1 && line ~ /^[[:space:]]*content[[:space:]]*:[[:space:]]*[A-Za-z_][A-Za-z0-9_.]*[[:space:]]*\{/) {
+                    in_content = 1
+                    content_depth = 0
+                    content_start = NR
+                    content_has_center = 0
+                    content_has_group = 0
+                    in_search = 0
+                    search_depth = 0
+                    search_fill_width = 0
+                }
+
+                if (in_content) {
+                    if (line ~ /^[[:space:]]*(D\.)?(ButtonBox|ButtonGroup|ControlGroup)[[:space:]]*\{/)
+                        content_has_group = 1
+
+                    if (line ~ /anchors\.horizontalCenter[[:space:]]*:/ \
+                        || line ~ /anchors\.centerIn[[:space:]]*:[[:space:]]*parent/ \
+                        || line ~ /Layout\.alignment[[:space:]]*:.*AlignHCenter/)
+                        content_has_center = 1
+
+                    if (!in_search && line ~ /^[[:space:]]*(D\.)?SearchEdit[[:space:]]*\{/) {
+                        in_search = 1
+                        search_depth = 0
+                    }
+
+                    if (in_search) {
+                        if (search_depth == 1 && line ~ /Layout\.fillWidth[[:space:]]*:[[:space:]]*true/)
+                            search_fill_width = 1
+
+                        search_depth += delta
+                        if (search_depth <= 0)
+                            in_search = 0
+                    }
+
+                    content_depth += delta
+                    if (content_depth <= 0) {
+                        if (content_has_group && search_fill_width && !content_has_center)
+                            printf "%s: D.TitleBar.content uses an expanding search row but does not center the visible header control cluster\n", content_start
+                        in_content = 0
+                    }
+                }
+
+                depth += delta
+                if (depth <= 0)
+                    in_titlebar = 0
+            }
+        }
+    ' "$file"
+}
+
+detect_header_button_icon_size_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        BEGIN {
+            in_titlebar = 0
+            depth = 0
+            in_button = 0
+            button_depth = 0
+            button_start = 0
+            button_has_icon = 0
+            button_width_ok = 0
+            button_height_ok = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_titlebar && line ~ /D\.TitleBar[[:space:]]*\{/) {
+                in_titlebar = 1
+                depth = 0
+            }
+
+            if (in_titlebar) {
+                if (!in_button && line ~ /^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*[[:space:]]*:[[:space:]]*)?D\.(ToolButton|Button|RecommandButton|WarningButton)[[:space:]]*\{/) {
+                    in_button = 1
+                    button_depth = 0
+                    button_start = NR
+                    button_has_icon = 0
+                    button_width_ok = 0
+                    button_height_ok = 0
+                }
+
+                if (in_button) {
+                    if (button_depth == 1 && line ~ /icon\.(name|source)[[:space:]]*:/)
+                        button_has_icon = 1
+                    if (button_depth == 1 && line ~ /display[[:space:]]*:[[:space:]]*AbstractButton\.(IconOnly|TextBesideIcon|TextUnderIcon|IconBesideText)/)
+                        button_has_icon = 1
+                    if (button_depth == 1 && line ~ /icon\.width[[:space:]]*:[[:space:]]*16([^0-9]|$)/)
+                        button_width_ok = 1
+                    if (button_depth == 1 && line ~ /icon\.height[[:space:]]*:[[:space:]]*16([^0-9]|$)/)
+                        button_height_ok = 1
+
+                    button_depth += delta
+                    if (button_depth <= 0) {
+                        if (button_has_icon && (!button_width_ok || !button_height_ok))
+                            printf "%s: symbolic app-side header buttons must explicitly set a 16x16 icon box\n", button_start
+                        in_button = 0
+                    }
+                }
+
+                depth += delta
+                if (depth <= 0)
+                    in_titlebar = 0
             }
         }
     ' "$file"
@@ -1007,8 +1321,14 @@ detect_transparent_titlebar_background_hits() {
         return
     fi
 
+    if grep -qE 'StyledBehindWindowBlur|sidebarWidth|sidebarShell|sidebarHost|onCollapseRequested' "$file"; then
+        if [[ -z "$(detect_persistent_sidebar_header_surface_hits "$file")" ]]; then
+            return
+        fi
+    fi
+
     if ! grep -qE 'Theme\.(titlebarBg|bgToolbar)([^A-Za-z0-9_]|$)' "$file"; then
-        grep -nE '^[[:space:]]*D\.TitleBar[[:space:]]*\{' "$file" \
+        grep -nE 'D\.TitleBar[[:space:]]*\{' "$file" \
             | sed 's/$/: transparent main window uses D.TitleBar but no explicit title-band background surface token was found/'
     fi
 }
@@ -2678,9 +2998,185 @@ detect_moving_logo_slot_hits() {
 
 detect_toolbar_page_title_hits() {
     local file="$1"
-    if grep -qE 'D\.WindowButtonGroup|D\.ThemeMenu|ThemeMenu|WindowButtonGroup' "$file"; then
-        grep -nE 'text[[:space:]]*:[[:space:]]*(currentItem\.title|currentPageTitle|pageTitle|headerTitle|currentTitle|AppStore\.[A-Za-z0-9_]*title|AppStore\.navigationItems.*title)' "$file" || true
+    if ! grep -qE 'StyledBehindWindowBlur|sidebarWidth|sidebarShell|sidebarHost|onCollapseRequested' "$file"; then
+        return
     fi
+
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        BEGIN {
+            in_titlebar = 0
+            titlebar_depth = 0
+            in_label = 0
+            label_depth = 0
+            label_start = 0
+            label_has_text = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_titlebar && line ~ /^[[:space:]]*(header[[:space:]]*:[[:space:]]*)?D\.TitleBar[[:space:]]*\{/) {
+                in_titlebar = 1
+                titlebar_depth = 0
+            }
+
+            if (in_titlebar) {
+                if (!in_label && line ~ /^[[:space:]]*(QQC2\.Label|D\.Label|Label|Text)[[:space:]]*\{/) {
+                    in_label = 1
+                    label_depth = 0
+                    label_start = NR
+                    label_has_text = 0
+                }
+
+                if (in_label) {
+                    if (label_depth == 1 && line ~ /^[[:space:]]*text[[:space:]]*:/)
+                        label_has_text = 1
+
+                    label_depth += delta
+                    if (label_depth <= 0) {
+                        if (label_has_text)
+                            printf "%s: DTK header contains a text label in a control-center-style persistent-sidebar window\n", label_start
+                        in_label = 0
+                    }
+                }
+
+                titlebar_depth += delta
+                if (titlebar_depth <= 0)
+                    in_titlebar = 0
+            }
+        }
+    ' "$file"
+}
+
+detect_persistent_sidebar_header_surface_hits() {
+    local file="$1"
+    if [[ "$(file_has_root_application_window "$file")" != "yes" ]]; then
+        return
+    fi
+
+    if ! grep -qE 'StyledBehindWindowBlur|sidebarWidth|sidebarShell|sidebarHost|onCollapseRequested' "$file"; then
+        return
+    fi
+
+    if ! grep -qE '^[[:space:]]*color[[:space:]]*:[[:space:]]*["'\'']transparent["'\'']' "$file"; then
+        return
+    fi
+
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        BEGIN {
+            in_titlebar = 0
+            titlebar_depth = 0
+            titlebar_start = 0
+            has_blur = 0
+            has_content_surface = 0
+            has_full_band_surface = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_titlebar && line ~ /^[[:space:]]*(header[[:space:]]*:[[:space:]]*)?D\.TitleBar[[:space:]]*\{/) {
+                in_titlebar = 1
+                titlebar_depth = 0
+                titlebar_start = NR
+                has_blur = 0
+                has_content_surface = 0
+                has_full_band_surface = 0
+            }
+
+            if (in_titlebar) {
+                if (line ~ /StyledBehindWindowBlur[[:space:]]*\{/)
+                    has_blur = 1
+                if (line ~ /color[[:space:]]*:[[:space:]]*Theme\.(bg|panelBg|bgPanel)([^A-Za-z0-9_]|$)/)
+                    has_content_surface = 1
+                if (line ~ /color[[:space:]]*:[[:space:]]*Theme\.(bgToolbar|titlebarBg)([^A-Za-z0-9_]|$)/)
+                    has_full_band_surface = 1
+
+                titlebar_depth += delta
+                if (titlebar_depth <= 0) {
+                    if (has_full_band_surface || !has_blur || !has_content_surface)
+                        printf "%s: persistent-sidebar DTK header must keep the left sidebar surface and right content base visually continuous up to the top edge\n", titlebar_start
+                    in_titlebar = 0
+                }
+            }
+        }
+    ' "$file"
+}
+
+detect_sidebar_duplicate_branding_hits() {
+    local file="$1"
+    if ! grep -qE 'StyledBehindWindowBlur|sidebarWidth|sidebarShell|sidebarHost|onCollapseRequested' "$file"; then
+        return
+    fi
+
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        BEGIN {
+            search_seen = 0
+            in_label = 0
+            label_depth = 0
+            has_logo = 0
+            logo_line = 0
+            label_text_count = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!search_seen && line ~ /(D\.)?SearchEdit[[:space:]]*\{/) {
+                search_seen = 1
+            }
+
+            if (!search_seen) {
+                if (!has_logo && line ~ /(logo-mark\.svg|AppLogo[[:space:]]*\{|icon\.name[[:space:]]*:[[:space:]]*["'\''][A-Za-z0-9_.-]+["'\''])/) {
+                    has_logo = 1
+                    logo_line = NR
+                }
+
+                if (!in_label && line ~ /^[[:space:]]*(QQC2\.Label|D\.Label|Label|Text)[[:space:]]*\{/) {
+                    in_label = 1
+                    label_depth = 0
+                }
+
+                if (in_label) {
+                    if (label_depth == 1 && line ~ /^[[:space:]]*text[[:space:]]*:/)
+                        label_text_count++
+
+                    label_depth += delta
+                    if (label_depth <= 0)
+                        in_label = 0
+                }
+            }
+        }
+
+        END {
+            if (search_seen && has_logo && label_text_count >= 2)
+                printf "%s: sidebar duplicates application branding above navigation instead of keeping one logo slot in the DTK header\n", logo_line
+        }
+    ' "$file"
 }
 
 detect_sidebar_gap_hits() {
@@ -3914,7 +4410,7 @@ detect_titlebar_menu_attachment_hits() {
             line = $0
             delta = brace_delta(line)
 
-            if (!in_titlebar && line ~ /^[[:space:]]*D\.TitleBar[[:space:]]*\{/) {
+            if (!in_titlebar && line ~ /D\.TitleBar[[:space:]]*\{/) {
                 in_titlebar = 1
                 depth = 0
                 start = NR
@@ -3946,81 +4442,7 @@ detect_titlebar_menu_attachment_hits() {
 }
 
 detect_full_width_titlebar_sidebar_hits() {
-    local file="$1"
-    awk '
-        function brace_delta(s,   tmp, opens, closes) {
-            tmp = s
-            opens = gsub(/\{/, "{", tmp)
-            closes = gsub(/\}/, "}", tmp)
-            return opens - closes
-        }
-
-        BEGIN {
-            root_seen = 0
-            root_depth = 0
-            in_titlebar = 0
-            titlebar_depth = 0
-            titlebar_start = 0
-            titlebar_level = 0
-            titlebar_has_fill = 0
-            titlebar_has_left_parent = 0
-            titlebar_has_right_parent = 0
-            titlebar_has_x = 0
-            titlebar_has_width = 0
-            titlebar_is_full_width = 0
-        }
-
-        {
-            line = $0
-            delta = brace_delta(line)
-
-            if (!root_seen && line ~ /^[[:space:]]*((D\.)?ApplicationWindow|Window)[[:space:]]*\{/) {
-                root_seen = 1
-                root_depth = 0
-            }
-
-            if (root_seen) {
-                if (!in_titlebar && line ~ /^[[:space:]]*D\.TitleBar[[:space:]]*\{/) {
-                    in_titlebar = 1
-                    titlebar_depth = 0
-                    titlebar_start = NR
-                    titlebar_level = root_depth
-                    titlebar_has_fill = 0
-                    titlebar_has_left_parent = 0
-                    titlebar_has_right_parent = 0
-                    titlebar_has_x = 0
-                    titlebar_has_width = 0
-                    titlebar_is_full_width = 0
-                }
-
-                if (in_titlebar) {
-                    if (titlebar_depth == 1 && line ~ /anchors\.fill[[:space:]]*:[[:space:]]*parent/)
-                        titlebar_has_fill = 1
-                    if (titlebar_depth == 1 && line ~ /anchors\.left[[:space:]]*:[[:space:]]*parent\.left/)
-                        titlebar_has_left_parent = 1
-                    if (titlebar_depth == 1 && line ~ /anchors\.right[[:space:]]*:[[:space:]]*parent\.right/)
-                        titlebar_has_right_parent = 1
-                    if (titlebar_depth == 1 && line ~ /^[[:space:]]*x[[:space:]]*:/)
-                        titlebar_has_x = 1
-                    if (titlebar_depth == 1 && line ~ /^[[:space:]]*width[[:space:]]*:/)
-                        titlebar_has_width = 1
-
-                    titlebar_depth += delta
-                    if (titlebar_depth <= 0) {
-                        titlebar_is_full_width = titlebar_has_fill
-                        if (!titlebar_is_full_width && titlebar_has_left_parent && titlebar_has_right_parent && !titlebar_has_x && !titlebar_has_width)
-                            titlebar_is_full_width = 1
-
-                        if (titlebar_level <= 2 && titlebar_is_full_width)
-                            printf "%s: persistent-left-sidebar apps must not use a top-level full-width D.TitleBar as the primary outer shell\n", titlebar_start
-                        in_titlebar = 0
-                    }
-                }
-
-                root_depth += delta
-            }
-        }
-    ' "$file"
+    :
 }
 
 detect_titlebar_custom_main_menu_trigger_hits() {
@@ -4051,7 +4473,7 @@ detect_titlebar_custom_main_menu_trigger_hits() {
             line = $0
             delta = brace_delta(line)
 
-            if (!in_titlebar && line ~ /^[[:space:]]*D\.TitleBar[[:space:]]*\{/) {
+            if (!in_titlebar && line ~ /D\.TitleBar[[:space:]]*\{/) {
                 in_titlebar = 1
                 titlebar_depth = 0
                 reset_button()
@@ -4612,6 +5034,51 @@ detect_sidebar_width_squeeze_hits() {
     fi
 }
 
+detect_window_scene_preview_subdued_hits() {
+    local file="$1"
+    awk '
+        function flush_preview() {
+            if (in_preview && !has_subdued && !has_waiver)
+                printf "%s: WindowScenePreview should explicitly set subdued: true when used as an auto-generated structural thumbnail\n", start_line
+            in_preview = 0
+            preview_depth = 0
+            start_line = 0
+            has_subdued = 0
+            has_waiver = 0
+        }
+
+        {
+            line = $0
+
+            if (!in_preview && line ~ /^[[:space:]]*WindowScenePreview[[:space:]]*\{/) {
+                in_preview = 1
+                preview_depth = 0
+                start_line = NR
+                has_subdued = 0
+                has_waiver = 0
+            }
+
+            if (in_preview) {
+                if (line ~ /subdued[[:space:]]*:[[:space:]]*true([^A-Za-z0-9_]|$)/)
+                    has_subdued = 1
+                if (line ~ /uos-design:[[:space:]]*allow-strong-card-thumbnail/)
+                    has_waiver = 1
+
+                opens = gsub(/\{/, "{", line)
+                closes = gsub(/\}/, "}", line)
+                preview_depth += opens - closes
+
+                if (preview_depth <= 0)
+                    flush_preview()
+            }
+        }
+
+        END {
+            flush_preview()
+        }
+    ' "$file"
+}
+
 dtk_available=0
 for candidate in \
     /usr/lib/x86_64-linux-gnu/qt6/qml/org/deepin/dtk \
@@ -4685,12 +5152,10 @@ while IFS= read -r -d '' file; do
         done < <(detect_small_settings_dialog_hits "$file")
     fi
 
-    if ! grep -q 'uos-design: allow-system-titlebar-on-standard-dtk-surface' "$file"; then
-        while IFS= read -r hit; do
-            [[ -z "$hit" ]] && continue
-            log_fail "standard-dtk-surface-system-titlebar" "$rel:$hit"
-        done < <(detect_standard_dtk_surface_system_titlebar_hits "$file")
-    fi
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "standard-dtk-surface-system-titlebar" "$rel:$hit"
+    done < <(detect_standard_dtk_surface_system_titlebar_hits "$file")
 
     if (( dtk_available )) && dtk_settings_has_export SettingsDialog && ! grep -q 'uos-design: allow-settings-dialog-without-icon' "$file"; then
         while IFS= read -r hit; do
@@ -4767,6 +5232,11 @@ while IFS= read -r -d '' file; do
         log_fail "dialog-overlay" "$rel:$hit"
     done < <(detect_dialog_overlay_hits "$file")
 
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "main-window-dtk-header" "$rel:$hit"
+    done < <(detect_required_main_window_header_hits "$file")
+
     if (( dtk_available )) && dtk_has_export WindowButtonGroup && ! grep -q 'uos-design: allow-custom-window-buttons' "$file"; then
         while IFS= read -r hit; do
             [[ -z "$hit" ]] && continue
@@ -4785,6 +5255,16 @@ while IFS= read -r -d '' file; do
         [[ -z "$hit" ]] && continue
         log_fail "titlebar-control-safe-area" "$rel:$hit"
     done < <(detect_titlebar_safe_area_hits "$file")
+
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "titlebar-centered-content" "$rel:$hit"
+    done < <(detect_centered_titlebar_content_hits "$file")
+
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "header-icon-size" "$rel:$hit"
+    done < <(detect_header_button_icon_size_hits "$file")
 
     while IFS= read -r hit; do
         [[ -z "$hit" ]] && continue
@@ -4836,10 +5316,6 @@ while IFS= read -r -d '' file; do
         if [[ "$(file_has_root_application_window "$file")" == "yes" ]] \
             && grep -qE 'AppSidebar|sidebarWidth|sidebarHidden|sidebarHost|onCollapseRequested' "$file"
         then
-            while IFS= read -r hit; do
-                [[ -z "$hit" ]] && continue
-                log_fail "full-width-titlebar-sidebar-app" "$rel:$hit"
-            done < <(detect_full_width_titlebar_sidebar_hits "$file")
             while IFS= read -r hit; do
                 [[ -z "$hit" ]] && continue
                 log_fail "full-window-blur-sidebar-app" "$rel:$hit"
@@ -5227,6 +5703,13 @@ while IFS= read -r -d '' file; do
         log_fail "gradient-card-whitespace" "$rel:$hit"
     done < <(detect_gradient_card_whitespace_hits "$file")
 
+    if ! grep -q 'uos-design: allow-strong-card-thumbnail' "$file"; then
+        while IFS= read -r hit; do
+            [[ -z "$hit" ]] && continue
+            log_fail "card-structural-thumbnail-contrast" "$rel:$hit"
+        done < <(detect_window_scene_preview_subdued_hits "$file")
+    fi
+
     while IFS= read -r hit; do
         [[ -z "$hit" ]] && continue
         log_fail "status-duplication" "$rel:$hit"
@@ -5297,6 +5780,16 @@ while IFS= read -r -d '' file; do
             log_fail "moving-logo-slot" "$rel:$hit (keep the top-left logo in one stable window-relative slot; do not place it in the animated sidebar or toggle its slot across sidebar states)"
         done < <(detect_moving_logo_slot_hits "$file")
     fi
+
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "persistent-sidebar-header-surface" "$rel:$hit (carry the left sidebar surface and right content base up under the DTK header controls; do not insert a separate full-width titleband surface)"
+    done < <(detect_persistent_sidebar_header_surface_hits "$file")
+
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "sidebar-duplicate-branding" "$rel:$hit (keep one app logo slot in the DTK header; remove duplicate logo/title/description branding above sidebar navigation)"
+    done < <(detect_sidebar_duplicate_branding_hits "$file")
 
     if ! grep -q 'uos-design: allow-toolbar-page-title' "$file"; then
         while IFS= read -r hit; do

@@ -59,6 +59,8 @@ import org.deepin.dtk.settings 1.0 as Settings
 ### 1. 主窗口按钮
 
 - 如果顶层窗口需要最小化、最大化 / 还原、关闭按钮，并且本机 DTK 已导出 `D.WindowButtonGroup`，默认必须直接使用 `D.WindowButtonGroup`。
+- 对主窗口，`D.WindowButtonGroup` 必须与 `D.TitleBar.menu` 一起组成右上角四按钮带：菜单、最小化、最大化 / 还原、关闭。固定尺寸窗口可以省略最大化 / 还原。
+- 新项目不要盲猜 header、menu 和右上角按钮怎么接；直接读取 `references/components/unified-header.md` 并按其中的主窗口范式落地。
 - 不要再用一组 `D.ToolButton`、`Button` 或自绘 icon row 重做一套窗口按钮。
 - 只有在 `D.WindowButtonGroup` 明确无法满足目标布局时，才允许窄范围 fallback，并且必须写 `uos-design: allow-custom-window-buttons`。
 
@@ -78,12 +80,18 @@ import org.deepin.dtk.settings 1.0 as Settings
 - `D.WindowButtonGroup` 不包含主菜单按钮。它只负责最小化、最大化 / 还原、关闭这一组窗口控制。
 - 本机公开导出的 `D.ThemeMenu` 不是一个可直接放进 `RowLayout` / `anchors` 的按钮控件，它更接近 DTK 提供的菜单对象或主题菜单内容，而不是公开的顶层 menu-button。
 - 本机公开导出的 DTK 模块里没有单独的 `MenuButton` 类型。不要因此去发明自定义 `AppButton` 或 plain `Button`。
-- 当设计基线允许使用完整 `D.TitleBar` 时，优先沿用其标准菜单 affordance。
-- 当设计基线禁止完整 `D.TitleBar`，例如持久左侧栏应用必须使用控制中心式左右结构时，由于本机没有公开 `MenuButton` 导出，顶部主菜单入口默认使用一个最小化的 `D.ToolButton` 作为 `D.Menu` 或 `D.ThemeMenu` 的附着触发器。这个公开 DTK trigger 路径只能承担“触发标准 DTK 菜单”这一个职责：
-  - 不得手绘按钮背景或重做模板
-  - 不得手动写死菜单 `x` / `y`
-  - 不得把“本机没有 MenuButton 导出”当成放弃 DTK 菜单体系的理由
-  - 优先使用 `D.ToolButton` 而不是 plain `Button`、`AppButton` 或自绘模板
+- 主窗口一律通过 `D.TitleBar.menu` 暴露菜单按钮，不使用额外的 `D.ToolButton`、plain `Button` 或自绘按钮替代。
+- `leftContent` 默认放左上角 logo 或侧栏切换按钮，`content` 只在确实需要顶部搜索、标签或工具控件时才使用；具体写法同样直接参考 `references/components/unified-header.md`。
+- 不得手绘按钮背景或重做菜单触发模板。
+- 不得手动写死菜单 `x` / `y`。
+- 不得把“本机没有 MenuButton 导出”当成放弃 `D.TitleBar.menu` 的理由。
+- 所有用于主页面切换的标签，一律放进 `D.TitleBar.content`，不要在页面内容区再复制一条二级标签工具栏。
+
+### 4.1 应用内通知
+
+- 应用内瞬时通知默认使用 `D.FloatingMessage`。
+- 不要用自绘 `Rectangle`、自定义 `Popup`、页面内假 toast 或业务组件自行接管应用内瞬时通知。
+- 页面内说明条、持久状态横幅和空态说明不算“应用内瞬时通知”；瞬时通知仍应交给 DTK。
 
 ### 5. 侧栏 blur
 
