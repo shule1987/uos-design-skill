@@ -46,15 +46,21 @@ It reports blocking findings for:
 - oversized card shells with obviously large fixed heights
 - focal card content that binds to zero-padding card edges without an inner safe area
 - auto-generated structural thumbnails that appear in cards without an explicit subdued mode
+- structural thumbnail components that omit a fixed 1px edge stroke or still render preview ink with pure strong black/white semantics
 - focal graphic wrappers that advertise less height than the contained focal visual and therefore collapse surrounding spacing
 - fill-anchored layout children inside column-flow card primitives that rely on Layout.fillHeight spacers and therefore bypass the card sizing flow
 - repeated functional-row delegates that hardcode one literal bundled icon for all rows
 - functional list models that reuse one bundled icon asset across distinct item identities
 - action buttons with uncapped or oversized widths
+- negative-spacing or same-center text/button stacks that can overlap in one parent
 - explicit horizontal-scrolling list/table patterns in primary desktop surfaces
+- width-constrained dynamic text that lacks explicit wrap or elide handling and can be cut off horizontally
+- unclipped list or flickable viewports, and child blocks that bleed outside cards or viewport hosts
+- runtime geometry findings, when the repo exposes the `UOS_DESIGN_VISUAL_AUDIT` hook, for rendered text overlap, horizontal cutoff, content escaping preview/card/viewport hosts, and near-height card rows that still fail to align
 - scrollbars whose visible thickness exceeds 20px
 - internal textless progress indicators whose visible thickness exceeds 20px or lacks an explicit cap
 - dense icon/text/button clusters with explicit zero spacing
+- cards whose explicit content inset falls below 6px
 - selected sidebar items that add a border or outline
 - persistent-sidebar collapse toggles that use generic chevrons or arrows
 - moving or duplicated top-left logo slots across sidebar expand/collapse
@@ -77,7 +83,12 @@ It reports blocking findings for:
 - interactive icon tint using Theme.textMuted without waivers
 - DTK controls with replaced structural templates without waivers
 - custom in-app notifications without waivers
+- DTK FloatingMessage payloads that still push custom iconName fields through app-side toast wrappers without waivers
+- direct D.FloatingMessage instantiation in app code instead of routing transient notifications through D.DTK.sendMessage(...)
 - rasterized functional-icon pipelines without waivers
+- functional icon-source controls that skip explicit theme-driven alpha tint
+- DTK buttons or toolbuttons that still feed symbolic SVG assets through icon.source instead of the audited alpha-tint path
+- button-contained functional icons that do not use the same 16px box as pure icon buttons
 - inline derived navigation colors in sidebar/nav files without waivers
 - custom main-menu triggers without waivers
 - application main menus that do not use D.TitleBar.menu
@@ -103,6 +114,7 @@ It reports blocking findings for:
 - one surface rendering the same numeric ratio through both circular/ring progress and horizontal progress
 - popup-style `D.Dialog` usage in desktop app code when local `DialogWindow` exists and no waiver explains the exception
 - `DialogButtonBox` usage inside app dialog code even though the local `DialogWindow` standard path expects DTK button rows
+- DTK dialogs that stack multiple separate action-button rows instead of one standard action row
 - vertically stacked multi-button action areas inside normal cards or dialogs
 - self-drawn overlay layers inside DTK dialogs
 - non-DTK dialogs or dialog shells in projects where DTK dialogs are available locally
@@ -146,6 +158,7 @@ grep_repo() {
         --exclude-dir=.cache \
         --exclude-dir=.codex \
         --exclude-dir=build \
+        --exclude-dir=build-codex \
         --exclude-dir=cmake-build-debug \
         --exclude-dir=cmake-build-release \
         --exclude-dir=dist \
@@ -163,6 +176,7 @@ list_qml_files() {
         -o -path "$ROOT/.cache" \
         -o -path "$ROOT/.codex" \
         -o -path "$ROOT/build" \
+        -o -path "$ROOT/build-codex" \
         -o -path "$ROOT/cmake-build-debug" \
         -o -path "$ROOT/cmake-build-release" \
         -o -path "$ROOT/dist" \
@@ -178,11 +192,37 @@ list_source_files() {
         -o -path "$ROOT/.cache" \
         -o -path "$ROOT/.codex" \
         -o -path "$ROOT/build" \
+        -o -path "$ROOT/build-codex" \
         -o -path "$ROOT/cmake-build-debug" \
         -o -path "$ROOT/cmake-build-release" \
         -o -path "$ROOT/dist" \
         -o -path "$ROOT/node_modules" \) -prune \
         -o -type f \( -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' -o -name '*.h' -o -name '*.hpp' \) -print0
+}
+
+detect_cmake_project_binary_name() {
+    local cmake_file="$ROOT/CMakeLists.txt"
+    [[ -f "$cmake_file" ]] || return 0
+
+    sed -nE 's/^[[:space:]]*project[[:space:]]*\(([A-Za-z0-9_.-]+).*/\1/p' "$cmake_file" | head -n 1
+}
+
+detect_visual_audit_executable() {
+    local binary_name="$1"
+    [[ -n "$binary_name" ]] || return 0
+
+    local candidate
+    for candidate in \
+        "$ROOT/build-codex/$binary_name" \
+        "$ROOT/build/$binary_name" \
+        "$ROOT/cmake-build-debug/$binary_name" \
+        "$ROOT/cmake-build-release/$binary_name"
+    do
+        if [[ -x "$candidate" ]]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
 }
 
 dtk_has_export() {
@@ -2747,6 +2787,387 @@ detect_dense_cluster_zero_spacing_hits() {
     ' "$file"
 }
 
+detect_text_button_overlap_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function base_type(name,   t) {
+            t = name
+            sub(/^.*\./, "", t)
+            return t
+        }
+
+        function is_container(name,   t) {
+            t = base_type(name)
+            return t ~ /^(Item|Rectangle|Row|Column|Grid|Flow|Pane|Frame|Control|RowLayout|ColumnLayout|GridLayout)$/
+        }
+
+        function is_text_button(name,   t) {
+            t = base_type(name)
+            return t ~ /^(Label|Text|Button|ToolButton|IconButton|RecommandButton|WarningButton)$/
+        }
+
+        function clear_slot(i) {
+            delete type[i]
+            delete start[i]
+            delete depth[i]
+            delete spacing_negative[i]
+            delete child_tb_count[i]
+            delete child_centered_tb_count[i]
+            delete child_fill_tb_count[i]
+            delete self_centered[i]
+            delete self_fill[i]
+        }
+
+        BEGIN {
+            stack = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (line ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_.]*[[:space:]]*\{[[:space:]]*(\/\/.*)?$/) {
+                stack++
+                type[stack] = line
+                sub(/^[[:space:]]*/, "", type[stack])
+                sub(/[[:space:]]*\{.*/, "", type[stack])
+                start[stack] = NR
+                depth[stack] = 0
+                spacing_negative[stack] = 0
+                child_tb_count[stack] = 0
+                child_centered_tb_count[stack] = 0
+                child_fill_tb_count[stack] = 0
+                self_centered[stack] = 0
+                self_fill[stack] = 0
+            }
+
+            if (stack > 0) {
+                if (depth[stack] == 1) {
+                    if (is_container(type[stack]) && line ~ /^[[:space:]]*spacing[[:space:]]*:[[:space:]]*-[0-9]/)
+                        spacing_negative[stack] = 1
+
+                    if (is_text_button(type[stack])) {
+                        if (line ~ /^[[:space:]]*anchors\.centerIn[[:space:]]*:[[:space:]]*parent([[:space:]]*(\/\/.*)?$)/)
+                            self_centered[stack] = 1
+                        if (line ~ /^[[:space:]]*anchors\.fill[[:space:]]*:[[:space:]]*parent([[:space:]]*(\/\/.*)?$)/)
+                            self_fill[stack] = 1
+                    }
+                }
+
+                depth[stack] += delta
+                while (stack > 0 && depth[stack] <= 0) {
+                    closed = stack
+                    parent = stack - 1
+
+                    if (parent >= 1 && is_container(type[parent]) && is_text_button(type[closed])) {
+                        child_tb_count[parent]++
+                        if (self_centered[closed])
+                            child_centered_tb_count[parent]++
+                        if (self_fill[closed])
+                            child_fill_tb_count[parent]++
+                    }
+
+                    if (is_container(type[closed])) {
+                        if (spacing_negative[closed] && child_tb_count[closed] >= 2)
+                            printf "%s: container uses negative spacing between direct text/button children and can overlap them\n", start[closed]
+                        if (child_centered_tb_count[closed] > 1)
+                            printf "%s: multiple direct text/button children center themselves in the same parent and can overlap\n", start[closed]
+                        if (child_fill_tb_count[closed] > 1 || (child_fill_tb_count[closed] >= 1 && child_tb_count[closed] > child_fill_tb_count[closed]))
+                            printf "%s: a direct text/button child fills the parent while peer controls share the same container\n", start[closed]
+                    }
+
+                    clear_slot(closed)
+                    stack--
+                }
+            }
+        }
+    ' "$file"
+}
+
+detect_dynamic_text_cutoff_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function reset_block() {
+            in_block = 0
+            depth = 0
+            start = 0
+            has_text = 0
+            dynamic_text = 0
+            constrained = 0
+            has_left = 0
+            has_right = 0
+            wrapped = 0
+            elided = 0
+        }
+
+        function is_simple_static_text(s) {
+            return s ~ /^[[:space:]]*text[[:space:]]*:[[:space:]]*"[^"]*"[[:space:]]*(\/\/.*)?$/ \
+                || s ~ /^[[:space:]]*text[[:space:]]*:[[:space:]]*qsTr\("[^"]*"\)[[:space:]]*(\/\/.*)?$/
+        }
+
+        BEGIN {
+            reset_block()
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_block && line ~ /^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*\.)?(Label|Text)[[:space:]]*\{/) {
+                in_block = 1
+                depth = 0
+                start = NR
+                has_text = 0
+                dynamic_text = 0
+                constrained = 0
+                has_left = 0
+                has_right = 0
+                wrapped = 0
+                elided = 0
+            }
+
+            if (in_block) {
+                if (depth == 1 && line ~ /^[[:space:]]*text[[:space:]]*:/) {
+                    has_text = 1
+                    if (!is_simple_static_text(line))
+                        dynamic_text = 1
+                }
+
+                if (depth == 1) {
+                    if (line ~ /^[[:space:]]*(Layout\.)?fillWidth[[:space:]]*:[[:space:]]*true([[:space:]]*(\/\/.*)?$)/)
+                        constrained = 1
+                    if (line ~ /^[[:space:]]*(width|implicitWidth|Layout\.preferredWidth|Layout\.minimumWidth|Layout\.maximumWidth|maximumWidth|minimumWidth)[[:space:]]*:/)
+                        constrained = 1
+                    if (line ~ /^[[:space:]]*anchors\.fill[[:space:]]*:[[:space:]]*parent([[:space:]]*(\/\/.*)?$)/)
+                        constrained = 1
+                    if (line ~ /^[[:space:]]*anchors\.left[[:space:]]*:/)
+                        has_left = 1
+                    if (line ~ /^[[:space:]]*anchors\.right[[:space:]]*:/)
+                        has_right = 1
+                    if (line ~ /wrapMode[[:space:]]*:[[:space:]]*Text\.(WordWrap|WrapAnywhere)/)
+                        wrapped = 1
+                    if (line ~ /elide[[:space:]]*:[[:space:]]*Text\./)
+                        elided = 1
+                }
+
+                depth += delta
+                if (depth <= 0) {
+                    if (has_text && dynamic_text && (constrained || (has_left && has_right)) && !wrapped && !elided)
+                        printf "%s: width-constrained dynamic text lacks wrapMode or elide and can be cut off horizontally\n", start
+                    reset_block()
+                }
+            }
+        }
+    ' "$file"
+}
+
+detect_unclipped_viewport_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function reset_view() {
+            in_view = 0
+            depth = 0
+            start = 0
+            view_type = ""
+            has_clip = 0
+        }
+
+        BEGIN {
+            reset_view()
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_view && line ~ /^[[:space:]]*(ListView|GridView|PathView|Flickable)[[:space:]]*\{/) {
+                in_view = 1
+                depth = 0
+                start = NR
+                view_type = line
+                sub(/^[[:space:]]*/, "", view_type)
+                sub(/[[:space:]]*\{.*/, "", view_type)
+                has_clip = 0
+            }
+
+            if (in_view) {
+                if (depth == 1 && line ~ /^[[:space:]]*clip[[:space:]]*:[[:space:]]*true([[:space:]]*(\/\/.*)?$)/)
+                    has_clip = 1
+
+                depth += delta
+                if (depth <= 0) {
+                    if (!has_clip)
+                        printf "%s: %s must set clip: true so content stays inside the visible viewport\n", start, view_type
+                    reset_view()
+                }
+            }
+        }
+    ' "$file"
+}
+
+detect_container_overflow_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function base_type(name,   t) {
+            t = name
+            sub(/^.*\./, "", t)
+            return t
+        }
+
+        function is_region_host(name,   t) {
+            t = base_type(name)
+            return t ~ /^(SectionCard|MetricCard|ListView|GridView|PathView|Flickable|ScrollView|Pane|Frame)$/
+        }
+
+        function clear_slot(i) {
+            delete type[i]
+            delete start[i]
+            delete depth[i]
+            delete neg_margin[i]
+            delete neg_offset[i]
+            delete oversize_width[i]
+            delete oversize_height[i]
+        }
+
+        BEGIN {
+            stack = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (line ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_.]*[[:space:]]*\{[[:space:]]*(\/\/.*)?$/) {
+                stack++
+                type[stack] = line
+                sub(/^[[:space:]]*/, "", type[stack])
+                sub(/[[:space:]]*\{.*/, "", type[stack])
+                start[stack] = NR
+                depth[stack] = 0
+                neg_margin[stack] = 0
+                neg_offset[stack] = 0
+                oversize_width[stack] = 0
+                oversize_height[stack] = 0
+            }
+
+            if (stack > 0) {
+                if (depth[stack] == 1) {
+                    if (line ~ /^[[:space:]]*anchors\.(margins|leftMargin|rightMargin|topMargin|bottomMargin)[[:space:]]*:[[:space:]]*-[0-9]/)
+                        neg_margin[stack] = 1
+                    if (line ~ /^[[:space:]]*[xy][[:space:]]*:[[:space:]]*-[0-9]/)
+                        neg_offset[stack] = 1
+                    if (line ~ /^[[:space:]]*(width|implicitWidth|Layout\.preferredWidth|Layout\.minimumWidth|Layout\.maximumWidth)[[:space:]]*:[[:space:]]*parent\.width[[:space:]]*\+[[:space:]]*[1-9][0-9]*/)
+                        oversize_width[stack] = 1
+                    if (line ~ /^[[:space:]]*(height|implicitHeight|Layout\.preferredHeight|Layout\.minimumHeight|Layout\.maximumHeight)[[:space:]]*:[[:space:]]*parent\.height[[:space:]]*\+[[:space:]]*[1-9][0-9]*/)
+                        oversize_height[stack] = 1
+                }
+
+                depth[stack] += delta
+                while (stack > 0 && depth[stack] <= 0) {
+                    closed = stack
+                    parent = stack - 1
+
+                    if (parent >= 1 && is_region_host(type[parent])) {
+                        if (neg_margin[closed])
+                            printf "%s: child block uses negative margins and can bleed outside its parent region\n", start[closed]
+                        if (neg_offset[closed])
+                            printf "%s: child block uses negative x/y offsets and can escape its parent region\n", start[closed]
+                        if (oversize_width[closed])
+                            printf "%s: child block widens itself beyond parent.width and can overflow horizontally\n", start[closed]
+                        if (oversize_height[closed])
+                            printf "%s: child block grows beyond parent.height and can overflow vertically\n", start[closed]
+                    }
+
+                    clear_slot(closed)
+                    stack--
+                }
+            }
+        }
+    ' "$file"
+}
+
+detect_tight_card_padding_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function numeric_value(s,   value) {
+            value = s
+            sub(/.*:[[:space:]]*/, "", value)
+            gsub(/[^0-9.]/, "", value)
+            return value + 0
+        }
+
+        BEGIN {
+            in_card = 0
+            depth = 0
+            start = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_card && line ~ /^[[:space:]]*(SectionCard|MetricCard)[[:space:]]*\{/) {
+                in_card = 1
+                depth = 0
+                start = NR
+            }
+
+            if (in_card) {
+                if (depth == 1) {
+                    if (line ~ /^[[:space:]]*(padding|leftPadding|rightPadding|topPadding|bottomPadding|horizontalPadding|verticalPadding)[[:space:]]*:[[:space:]]*([0-9]+|[0-9]+\.[0-9]+)([[:space:]]*(\/\/.*)?$)/) {
+                        value = numeric_value(line)
+                        if (value < 6)
+                            printf "%s: card content inset %.3g is below the 6px minimum\n", NR, value
+                    }
+                    if (line ~ /^[[:space:]]*(padding|leftPadding|rightPadding|topPadding|bottomPadding|horizontalPadding|verticalPadding)[[:space:]]*:[[:space:]]*Theme\.spacingXS([^A-Za-z0-9_]|$)/)
+                        printf "%s: card content inset uses Theme.spacingXS and falls below the 6px minimum\n", NR
+                }
+
+                depth += delta
+                if (depth <= 0) {
+                    in_card = 0
+                    start = 0
+                }
+            }
+        }
+    ' "$file"
+}
+
 detect_sidebar_selected_border_hits() {
     local file="$1"
     grep -nE 'border\.(color|width)[[:space:]]*:[[:space:]].*(current(Index)?|selected|checked|active)' "$file" || true
@@ -4897,7 +5318,7 @@ detect_custom_dialog_content_style_hits() {
                 if (dialog_depth >= 1 && line ~ /(SectionCard|MetricCard|StatusBadge|MetricValueLabel|CircularScore|PerformanceChart|PageHeader|AppItemIcon|SvgIcon)[[:space:]]*\{/)
                     printf "%s: DTK dialog embeds a page-style widget and no longer reads like a standard DTK dialog\n", NR
 
-                if (!in_label && line ~ /^[[:space:]]*(D\.)?(Label|Text)[[:space:]]*\{/) {
+                if (!in_label && line ~ /^[[:space:]]*((D|QQC2|QQC)\.)?(Label|Text)[[:space:]]*\{/) {
                     in_label = 1
                     label_depth = 0
                     label_start = NR
@@ -4941,6 +5362,351 @@ detect_custom_dialog_content_style_hits() {
             }
         }
     ' "$file"
+}
+
+detect_dialog_multiple_action_rows_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function flush_dialog() {
+            if (in_dialog && action_rows > 1)
+                printf "%s: DTK dialog contains %d separate action rows; keep one standard action row\n", dialog_start, action_rows
+            in_dialog = 0
+            dialog_depth = 0
+            dialog_start = 0
+            action_rows = 0
+            in_row = 0
+            row_depth = 0
+            row_button_count = 0
+        }
+
+        BEGIN {
+            in_dialog = 0
+            dialog_depth = 0
+            dialog_start = 0
+            action_rows = 0
+            in_row = 0
+            row_depth = 0
+            row_button_count = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_dialog && line ~ /^[[:space:]]*D\.(Dialog|DialogWindow)[[:space:]]*\{/) {
+                in_dialog = 1
+                dialog_depth = 0
+                dialog_start = NR
+                action_rows = 0
+            }
+
+            if (in_dialog) {
+                if (!in_row && line ~ /^[[:space:]]*RowLayout[[:space:]]*\{/) {
+                    in_row = 1
+                    row_depth = 0
+                    row_button_count = 0
+                }
+
+                if (in_row) {
+                    if (line ~ /^[[:space:]]*((D|QQC2|QQC)\.)?(Button|WarningButton|RecommandButton|RoundButton|ToolButton)[[:space:]]*\{/)
+                        row_button_count++
+
+                    row_depth += delta
+                    if (row_depth <= 0) {
+                        if (row_button_count > 0)
+                            action_rows++
+                        in_row = 0
+                        row_depth = 0
+                        row_button_count = 0
+                    }
+                }
+
+                dialog_depth += delta
+                if (dialog_depth <= 0)
+                    flush_dialog()
+            }
+        }
+
+        END {
+            flush_dialog()
+        }
+    ' "$file"
+}
+
+detect_raw_icon_source_without_tint_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function reset_object() {
+            in_object = 0
+            object_depth = 0
+            icon_source_line = 0
+            has_icon_color = 0
+        }
+
+        BEGIN {
+            reset_object()
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_object && line ~ /^[[:space:]]*((D|QQC2|QQC)\.)?(MenuItem|Button|ToolButton|ActionButton|RecommandButton|WarningButton|RoundButton)[[:space:]]*\{/) {
+                in_object = 1
+                object_depth = 0
+                icon_source_line = 0
+                has_icon_color = 0
+            }
+
+            if (in_object) {
+                if (object_depth == 1 && line ~ /^[[:space:]]*icon\.source[[:space:]]*:/)
+                    icon_source_line = NR
+                if (object_depth == 1 && line ~ /^[[:space:]]*icon\.color[[:space:]]*:/)
+                    has_icon_color = 1
+
+                object_depth += delta
+                if (object_depth <= 0) {
+                    if (icon_source_line > 0 && !has_icon_color)
+                        printf "%s: icon.source is used without icon.color; symbolic SVG icons must use theme-driven alpha tint\n", icon_source_line
+                    reset_object()
+                }
+            }
+        }
+    ' "$file"
+}
+
+detect_floating_message_icon_payload_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function reset_payload() {
+            in_payload = 0
+            payload_depth = 0
+            payload_start = 0
+            has_icon_name = 0
+        }
+
+        BEGIN {
+            reset_payload()
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_payload && line ~ /(property[[:space:]]+var[[:space:]]+toastPayload|toastPayload[[:space:]]*=)/ && line ~ /\{/) {
+                in_payload = 1
+                payload_depth = delta
+                payload_start = NR
+                has_icon_name = (line ~ /iconName[[:space:]]*:/)
+                if (payload_depth <= 0) {
+                    if (has_icon_name)
+                        printf "%s: FloatingMessage toast payload still declares iconName; omit unstable custom icon payloads or add a narrow waiver\n", payload_start
+                    reset_payload()
+                }
+                next
+            }
+
+            if (in_payload) {
+                if (line ~ /iconName[[:space:]]*:/)
+                    has_icon_name = 1
+
+                payload_depth += delta
+                if (payload_depth <= 0) {
+                    if (has_icon_name)
+                        printf "%s: FloatingMessage toast payload still declares iconName; omit unstable custom icon payloads or add a narrow waiver\n", payload_start
+                    reset_payload()
+                }
+            }
+        }
+    ' "$file"
+}
+
+detect_direct_button_icon_source_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function reset_object() {
+            in_object = 0
+            object_depth = 0
+        }
+
+        BEGIN {
+            reset_object()
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_object && line ~ /^[[:space:]]*((D|QQC2|QQC)\.)?(Button|ToolButton|IconButton|ActionButton|RecommandButton|WarningButton|RoundButton)[[:space:]]*\{/) {
+                in_object = 1
+                object_depth = 0
+            }
+
+            if (in_object) {
+                if (object_depth == 1 \
+                    && line ~ /^[[:space:]]*icon\.source[[:space:]]*:/ \
+                    && line !~ /^[[:space:]]*icon\.source[[:space:]]*:[[:space:]]*""[[:space:]]*(\/\/.*)?$/)
+                    printf "%s: DTK button-style control uses icon.source directly; bundled symbolic SVG icons must go through the audited alpha-tint content path\n", NR
+
+                object_depth += delta
+                if (object_depth <= 0)
+                    reset_object()
+            }
+        }
+    ' "$file"
+}
+
+detect_button_icon_box_size_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function reset_object() {
+            in_object = 0
+            object_depth = 0
+            object_start = 0
+            is_symbolic_component = 0
+            has_icon = 0
+            icon_width_ok = 0
+            icon_height_ok = 0
+            uses_symbol_size = 0
+            symbol_size_ok = 0
+        }
+
+        BEGIN {
+            reset_object()
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_object && line ~ /^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*[[:space:]]*:[[:space:]]*)?((D|QQC2|QQC)\.)?(Button|ToolButton|IconButton|ActionButton|RecommandButton|WarningButton|RoundButton|SymbolicButton|SymbolicToolButton)[[:space:]]*\{/) {
+                in_object = 1
+                object_depth = 0
+                object_start = NR
+                is_symbolic_component = (line ~ /Symbolic(Button|ToolButton)[[:space:]]*\{/)
+                has_icon = 0
+                icon_width_ok = 0
+                icon_height_ok = 0
+                uses_symbol_size = 0
+                symbol_size_ok = 0
+            }
+
+            if (in_object) {
+                if (object_depth == 1 && line ~ /^[[:space:]]*icon\.(name|source)[[:space:]]*:/)
+                    has_icon = 1
+                if (object_depth == 1 && line ~ /^[[:space:]]*symbolSource[[:space:]]*:/)
+                    has_icon = 1
+                if (object_depth == 1 && line ~ /^[[:space:]]*(property[[:space:]]+int[[:space:]]+)?symbolSize[[:space:]]*:/)
+                    uses_symbol_size = 1
+                if (object_depth == 1 && line ~ /^[[:space:]]*icon\.width[[:space:]]*:[[:space:]]*16([^0-9]|$)/)
+                    icon_width_ok = 1
+                if (object_depth == 1 && line ~ /^[[:space:]]*icon\.height[[:space:]]*:[[:space:]]*16([^0-9]|$)/)
+                    icon_height_ok = 1
+                if (object_depth == 1 && line ~ /^[[:space:]]*(property[[:space:]]+int[[:space:]]+)?symbolSize[[:space:]]*:[[:space:]]*16([^0-9]|$)/)
+                    symbol_size_ok = 1
+
+                object_depth += delta
+                if (object_depth <= 0) {
+                    if (has_icon) {
+                        if (uses_symbol_size) {
+                            if (!symbol_size_ok)
+                                printf "%s: button-contained symbolic icons must use a 16px box matching pure icon buttons\n", object_start
+                        } else if (!is_symbolic_component && (!icon_width_ok || !icon_height_ok)) {
+                            printf "%s: button-contained symbolic icons must explicitly set a 16x16 icon box matching pure icon buttons\n", object_start
+                        }
+                    }
+                    reset_object()
+                }
+            }
+        }
+    ' "$file"
+}
+
+detect_window_scene_preview_border_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        BEGIN {
+            in_background = 0
+            background_depth = 0
+            background_start = 0
+            exact_border = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_background && line ~ /^[[:space:]]*background[[:space:]]*:[[:space:]]*Rectangle[[:space:]]*\{/) {
+                in_background = 1
+                background_depth = delta
+                background_start = NR
+                exact_border = (line ~ /border\.width[[:space:]]*:[[:space:]]*1([^0-9.]|$)/)
+                next
+            }
+
+            if (in_background) {
+                if (line ~ /^[[:space:]]*border\.width[[:space:]]*:[[:space:]]*1([[:space:]]*(\/\/.*)?$)/)
+                    exact_border = 1
+
+                background_depth += delta
+                if (background_depth <= 0) {
+                    if (!exact_border)
+                        printf "%s: structural thumbnail background should keep an explicit fixed 1px border\n", background_start
+                    in_background = 0
+                    background_depth = 0
+                    background_start = 0
+                    exact_border = 0
+                }
+            }
+        }
+    ' "$file"
+}
+
+detect_window_scene_preview_strong_ink_hits() {
+    local file="$1"
+    grep -nE '^[[:space:]]*color[[:space:]]*:[[:space:]]*(Theme\.(textStrong|textSecondary|fgStrong|fgNormal)|"#([Ff]{3}|[Ff]{6}|[0]{3}|[0]{6})")' "$file" || true
 }
 
 detect_navigation_only_sidebar_card_hits() {
@@ -5211,6 +5977,13 @@ while IFS= read -r -d '' file; do
             [[ -z "$hit" ]] && continue
             log_fail "dialog-button-box" "$rel:$hit"
         done < <(detect_dialog_button_box_hits "$file")
+    fi
+
+    if ! grep -q 'uos-design: allow-multi-action-dialog-rows' "$file"; then
+        while IFS= read -r hit; do
+            [[ -z "$hit" ]] && continue
+            log_fail "dialog-multi-action-rows" "$rel:$hit"
+        done < <(detect_dialog_multiple_action_rows_hits "$file")
     fi
 
     if ! grep -q 'uos-design: allow-vertical-action-stack' "$file"; then
@@ -5515,6 +6288,11 @@ while IFS= read -r -d '' file; do
 
     while IFS= read -r hit; do
         [[ -z "$hit" ]] && continue
+        log_fail "card-tight-padding" "$rel:$hit"
+    done < <(detect_tight_card_padding_hits "$file")
+
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
         log_fail "focal-wrapper-mismatch" "$rel:$hit"
     done < <(detect_focal_wrapper_mismatch_hits "$file")
 
@@ -5545,6 +6323,21 @@ while IFS= read -r -d '' file; do
             log_fail "horizontal-list-scroll" "$rel:$hit"
         done < <(detect_horizontal_scroll_risk_hits "$file")
     fi
+
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "horizontal-content-cutoff" "$rel:$hit"
+    done < <(detect_dynamic_text_cutoff_hits "$file")
+
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "region-content-overflow" "$rel:$hit"
+    done < <(detect_unclipped_viewport_hits "$file")
+
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "region-content-overflow" "$rel:$hit"
+    done < <(detect_container_overflow_hits "$file")
 
     while IFS= read -r hit; do
         [[ -z "$hit" ]] && continue
@@ -5581,6 +6374,11 @@ while IFS= read -r -d '' file; do
         log_fail "dense-cluster-zero-spacing" "$rel:$hit"
     done < <(detect_dense_cluster_zero_spacing_hits "$file")
 
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "text-button-overlap" "$rel:$hit"
+    done < <(detect_text_button_overlap_hits "$file")
+
     if ! grep -q 'uos-design: allow-custom-in-app-notification' "$file"; then
         case "$rel" in
             *Toast*.qml)
@@ -5589,6 +6387,43 @@ while IFS= read -r -d '' file; do
                 fi
                 ;;
         esac
+    fi
+
+    if ! grep -q 'uos-design: allow-floating-message-icon-payload' "$file" \
+        && grep -qE '(^|[[:space:]])D\.FloatingMessage([[:space:]]|\{)' "$file"
+    then
+        while IFS= read -r hit; do
+            [[ -z "$hit" ]] && continue
+            log_fail "floating-message-icon-payload" "$rel:$hit"
+        done < <(detect_floating_message_icon_payload_hits "$file")
+    fi
+
+    if ! grep -q 'uos-design: allow-direct-floating-message' "$file"; then
+        while IFS= read -r hit; do
+            [[ -z "$hit" ]] && continue
+            log_fail "direct-floating-message" "$rel:$hit: instantiate transient notifications via D.DTK.sendMessage(...) instead of direct D.FloatingMessage objects"
+        done < <(grep -nE '^[[:space:]]*D\.FloatingMessage[[:space:]]*\{' "$file" || true)
+    fi
+
+    if ! grep -q 'uos-design: allow-direct-button-icon-source' "$file"; then
+        while IFS= read -r hit; do
+            [[ -z "$hit" ]] && continue
+            log_fail "direct-button-icon-source" "$rel:$hit"
+        done < <(detect_direct_button_icon_source_hits "$file")
+    fi
+
+    if ! grep -q 'uos-design: allow-button-icon-box-size' "$file"; then
+        while IFS= read -r hit; do
+            [[ -z "$hit" ]] && continue
+            log_fail "button-icon-box-size" "$rel:$hit"
+        done < <(detect_button_icon_box_size_hits "$file")
+    fi
+
+    if ! grep -q 'uos-design: allow-untinted-icon-source' "$file"; then
+        while IFS= read -r hit; do
+            [[ -z "$hit" ]] && continue
+            log_fail "untinted-icon-source" "$rel:$hit"
+        done < <(detect_raw_icon_source_without_tint_hits "$file")
     fi
 
     if ! grep -q 'uos-design: allow-dtk-template-override' "$file"; then
@@ -5708,6 +6543,20 @@ while IFS= read -r -d '' file; do
             [[ -z "$hit" ]] && continue
             log_fail "card-structural-thumbnail-contrast" "$rel:$hit"
         done < <(detect_window_scene_preview_subdued_hits "$file")
+    fi
+
+    if [[ "$(basename "$file")" == "WindowScenePreview.qml" ]] && ! grep -q 'uos-design: allow-thumbnail-without-border' "$file"; then
+        while IFS= read -r hit; do
+            [[ -z "$hit" ]] && continue
+            log_fail "thumbnail-fixed-border" "$rel:$hit"
+        done < <(detect_window_scene_preview_border_hits "$file")
+    fi
+
+    if [[ "$(basename "$file")" == "WindowScenePreview.qml" ]] && ! grep -q 'uos-design: allow-strong-typography-thumbnail' "$file"; then
+        while IFS= read -r hit; do
+            [[ -z "$hit" ]] && continue
+            log_fail "thumbnail-strong-ink" "$rel:$hit"
+        done < <(detect_window_scene_preview_strong_ink_hits "$file")
     fi
 
     while IFS= read -r hit; do
@@ -5952,6 +6801,56 @@ if (( ${#main_menu_candidates[@]} > 0 )); then
     for hit in "${settings_button_candidates[@]}"; do
         log_fail "secondary-settings-entry" "$hit"
     done
+fi
+
+visual_audit_binary_name="$(detect_cmake_project_binary_name)"
+visual_audit_executable="$(detect_visual_audit_executable "$visual_audit_binary_name")"
+if [[ -n "$visual_audit_executable" ]] \
+    && [[ -n "$(grep_repo 'UOS_DESIGN_VISUAL_AUDIT' --include='*.cpp' --include='*.cc' --include='*.cxx' --include='*.h' --include='*.hpp')" ]]
+then
+    run_visual_audit_capture() {
+        local scene_key="${1-}"
+        if command -v timeout >/dev/null 2>&1; then
+            if [[ -n "$scene_key" ]]; then
+                timeout 30s env UOS_DESIGN_VISUAL_AUDIT=1 UOS_DESIGN_VISUAL_AUDIT_SCENE_KEY="$scene_key" "$visual_audit_executable" 2>&1 || true
+            else
+                timeout 30s env UOS_DESIGN_VISUAL_AUDIT=1 "$visual_audit_executable" 2>&1 || true
+            fi
+        else
+            if [[ -n "$scene_key" ]]; then
+                env UOS_DESIGN_VISUAL_AUDIT=1 UOS_DESIGN_VISUAL_AUDIT_SCENE_KEY="$scene_key" "$visual_audit_executable" 2>&1 || true
+            else
+                env UOS_DESIGN_VISUAL_AUDIT=1 "$visual_audit_executable" 2>&1 || true
+            fi
+        fi
+    }
+
+    visual_audit_output="$(run_visual_audit_capture)"
+
+    default_visual_audit_scene_keys="controls-lab,dialog-lab,typography-content,grouped-sidebar,flat-sidebar,detail-content,data-content,empty-state"
+    if [[ ${UOS_DESIGN_VISUAL_AUDIT_SCENE_KEYS+x} ]]; then
+        visual_audit_scene_spec="$UOS_DESIGN_VISUAL_AUDIT_SCENE_KEYS"
+    else
+        visual_audit_scene_spec="$default_visual_audit_scene_keys"
+    fi
+
+    if [[ -n "$visual_audit_scene_spec" ]]; then
+        IFS=',' read -r -a visual_audit_scene_keys <<<"$visual_audit_scene_spec"
+        for scene_key in "${visual_audit_scene_keys[@]}"; do
+            scene_key="$(printf '%s' "$scene_key" | tr -d '[:space:]')"
+            [[ -n "$scene_key" ]] || continue
+            visual_audit_output+=$'\n'
+            visual_audit_output+="$(run_visual_audit_capture "$scene_key")"
+        done
+    fi
+
+    while IFS= read -r line; do
+        [[ "$line" == VISUAL_AUDIT_FAIL\ \[* ]] || continue
+        code="${line#VISUAL_AUDIT_FAIL [}"
+        code="${code%%]*}"
+        detail="${line#*] }"
+        log_fail "$code" "$detail"
+    done <<<"$visual_audit_output"
 fi
 
 if (( findings )); then

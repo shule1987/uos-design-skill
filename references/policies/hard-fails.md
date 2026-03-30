@@ -53,6 +53,7 @@ Apply `references/policies/theme-icons.md`.
 Apply `references/policies/layout-density.md`.
 
 - Variable-length data surfaces still ship as oversized per-item cards, clipped fixed-width rows, or horizontally scrolling desktop lists without a narrow exception.
+- Text or button content still overlaps, visible content is still cut off horizontally, child content still bleeds outside its host region, or card content insets still drop below the 6px floor.
 - Multi-line row delegates still lack a leading icon by default, hardcode one shared icon for all items, use untruthful height contracts, or rely on self-referential or shadowed bindings.
 - Buttons still stretch far beyond their content needs without an explicit maximum width or justified exception.
 - Desktop work surfaces still leave large unused side gutters while the main content is artificially narrowed without an explicit readability or product requirement.
@@ -67,3 +68,7 @@ Apply `references/policies/progress-charts.md`.
 ## Audit
 
 - `scripts/audit_uos_qml.sh` reports findings and the response neither fixes them nor explains the exact remaining waiver.
+- When the repo exposes the `UOS_DESIGN_VISUAL_AUDIT` runtime hook, treat runtime geometry findings as first-class blockers across the main window and any shipped auxiliary scene windows. Do not close the task on the strength of static grep heuristics alone.
+- Build success, static inspection, or a one-shot startup smoke was used as sign-off without a full review of touched UI, touched backend behavior, and relevant PRD or acceptance criteria.
+- A touched shipped surface or behavior was closed without automatic dynamic validation on the built artifact using the strongest available automated path in the repo.
+- The repo lacked adequate automatic dynamic validation for a touched shipped surface and the task was still closed without adding that automation or explicitly keeping the task blocked.

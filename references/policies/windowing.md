@@ -17,7 +17,8 @@ Load this file for top-level windows, title bars, menus, and unified-header requ
 - Do not place `D.TitleBar`, `D.WindowButtonGroup`, or the DTK-owned top-right strip inside a clipped ancestor chain.
 - When local `D.TitleBar` is available, attach the main menu through `D.TitleBar.menu`. On main windows this menu affordance is mandatory; do not add a separate custom menu trigger button for the same menu.
 - Page-switching tabs belong in `D.TitleBar.content`. Do not place a second page-switch toolbar or tab strip inside the page body when the unified header already exists.
-- Symbolic app-side header buttons, including `leftContent` affordances and grouped page-switch buttons, must explicitly use `16x16` icon sizing unless a narrow waiver explains the exception.
+- Symbolic app-side header buttons other than the application logo slot, including functional `leftContent` affordances and grouped page-switch buttons, must explicitly use `16x16` icon sizing unless a narrow waiver explains the exception.
+- The top-left application logo in every application window must stay on a fixed `32x32` size. Do not set custom logo sizes window by window.
 - Clickable titlebar and page-switch controls must expose visible hover and pressed states in both light and dark themes.
 - Do not hardcode manual menu popup coordinates unless a validated platform constraint leaves no alternative.
 - On the normal DTK main-window path, do not use `Qt.CustomizeWindowHint`, and do not drop `Qt.WindowTitleHint` when explicitly setting flags.

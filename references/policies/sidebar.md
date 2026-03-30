@@ -21,6 +21,8 @@ Load this file for desktop apps with a persistent primary left sidebar.
 - If the sidebar collapses, make the motion read as translation out of view and back in, not as a squeeze-only width animation.
 - Keep the top-left logo in one stable slot across expanded and collapsed states.
 - Keep that logo slot in the DTK header. Do not add a second logo-plus-name or logo-plus-description brand block above the sidebar navigation by default.
+- Keep that top-left application logo on a fixed `32x32` size in every application window. Do not shrink or enlarge it per window state or per page.
+- Keep the left edge of that top-left application logo exactly `9px` from the window's left edge in every application window and sidebar state. Do not let it drift horizontally.
 - In control-center-style persistent-sidebar windows, the DTK header should not display the application name text or page title text by default. Put page titles in the page content header unless an explicit product requirement says otherwise.
 - Do not replace the expected dedicated sidebar-toggle affordance with a generic chevron or other arbitrary icon.
 - If the app exposes a main menu, route the main settings entry through that menu instead of a second visible `设置` button in the main interface.

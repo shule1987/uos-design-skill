@@ -76,6 +76,9 @@ D.ApplicationWindow {
 ## Left Side Rules
 
 - 左上角默认只保留一个稳定的 logo 槽位。
+- 所有应用窗口左上角的应用 logo 固定使用 `32x32`。不要在不同窗口、页面或状态里自行改成 16、20、22、24、28 等其他尺寸。
+- 所有应用窗口左上角应用 logo 的左边缘固定距窗口左边 `9px`，禁止居中摆放在更宽槽位里后再发生横向漂移。
+- 这个 `9px` 必须从 `D.TitleBar` 根边界起算；如果 `leftContent` 槽位自带 DTK 左侧内缩，就禁止把静态应用 logo 放进该槽位里再用 `leftMargin` 计算。
 - 控制中心式持久侧栏窗口默认不在顶带里显示应用名文本或页面标题文本。
 - 不要在侧栏导航顶部再复制一套 `logo + app name + description` 品牌头。
 - 需要侧栏切换按钮时，放在 `leftContent`，与 logo 共享左侧 header 区，而不是塞进页面内容区。
@@ -94,7 +97,7 @@ Header-toolbar action buttons should prefer symbolic 16px functional icons. Use 
 
 When the header mixes page switching, search, and compact actions, center the visible control cluster within the live header lane instead of pinning it to the left edge. Reserve balanced safe areas against both `leftContent` and the top-right DTK menu/window-control strip, then center the app-side control band inside that remaining lane.
 
-Every symbolic app-side header button, including `leftContent` affordances and grouped page-switch buttons, should explicitly set a `16x16` icon box.
+Every symbolic app-side header button other than the application logo slot, including functional `leftContent` affordances and grouped page-switch buttons, should explicitly set a `16x16` icon box. The application logo itself is not a 16px symbolic action icon; it must stay on the fixed `32x32` logo size.
 
 Use this pattern:
 

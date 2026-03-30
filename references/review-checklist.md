@@ -41,6 +41,7 @@ Use this file as the review router, not as the full checklist payload.
 - When file choice is unclear, consult `references/routing.md` first.
 - Do not load the whole `references/review/` directory by default.
 - Load only the review files that match the code under review.
+- When closing an implementation that changed shipped UOS UI or behavior, load this review router even if the user did not explicitly ask for a review.
 - Use `references/policies/hard-fails.md` with these review files only when deciding whether the task is complete.
 - Use `references/policies/waivers.md` only when validating an exception.
 - Run `scripts/audit_uos_qml.sh <repo-root>` before closing the review.

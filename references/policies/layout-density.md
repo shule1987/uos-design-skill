@@ -8,16 +8,21 @@ Load this file for lists, tables, cards, row density, width strategy, and reusab
 - For multi-line list-like rows, keep a leading icon by default.
 - Default that leading icon to `24px` or `32px`.
 - Use responsive column or slot widths for lists and tables. Do not rely on horizontal scrolling to rescue a desktop layout.
+- Width-constrained dynamic text in rows, cards, toolbars, or data surfaces must declare `wrapMode` or `elide`; do not let visible content be cut off horizontally by accident.
 - Do not keep scrollable lists artificially short when the surrounding surface still has obvious unused height.
 - Default desktop work surfaces to the maximum practical content width inside the content base. Do not center a narrow content column inside a wide work area unless the surface is intentionally readability-capped or a product requirement explicitly asks for it.
 - On data, settings, control, and dashboard surfaces, prefer expanding the live content layout to the available content width over preserving decorative side gutters.
 - Let the live scroll container fill the content base directly. Keep page padding inside the content layout itself, not as outer margins on the `ScrollView`, page stack, or content host. Vertical scrollbars should land on the far-right edge of the content area instead of floating inside inset gutters.
 - When content visually underlaps a header or a second-level toolbar, keep that underlap for the content only. The scrollbar track and thumb must start at the top of the visible content region, below the header or secondary-toolbar band, rather than passing through those bars.
+- Keep text and button clusters free of overlap. Negative spacing, stacked centered siblings, and fill-parent label/button overlays are not acceptable layout escapes.
+- Keep cards, lists, and viewport hosts truthful about containment. Child blocks must not escape through negative margins, negative positional offsets, or geometry that exceeds the host bounds.
+- When a live runtime geometry audit hook exists, use it to validate these containment rules against the rendered scene as well, including auxiliary scene windows instead of only the main shell. Static code review alone is not enough to sign off text overlap, horizontal clipping, host overflow, or near-height card-row alignment.
 - Give reusable containers a truthful height contract. Do not compute `implicitHeight` from a plain anchored `Item` with no intrinsic height.
 - Avoid self-referential bindings such as `title: title` or `description: description`.
 - Avoid shadowing component API property names with same-named required model roles in delegates.
 - Keep capped-width page compositions centered as a whole within the available content area.
 - Keep cards close to the size their content actually needs. Avoid decorative empty gaps, oversized fixed heights, or obviously over-wide buttons.
+- Card content insets must not fall below `6px` on any active edge.
 - Treat card collections as responsive grids, not loose piles of containers. Define column count, minimum card width, spans, and gutters per breakpoint, then place cards against that grid.
 - When adjacent cards in the same visual row differ in height by less than about 40%, including row peers inside multi-column responsive card walls, bias toward matching the tallest card in that row and keeping the top and bottom edges aligned rather than preserving a small accidental mismatch. Deliberate multi-column spanning cards may keep their own height unless the composition explicitly requires full-row alignment.
 - Treat each card interior as a grid as well. Media, labels, metrics, body copy, meta rows, and action areas should align to stable internal tracks and baselines instead of freeform anchoring.
