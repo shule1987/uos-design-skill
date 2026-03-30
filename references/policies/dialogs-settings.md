@@ -8,6 +8,12 @@ Load this file for dialogs, About surfaces, settings windows, and transient noti
   - `D.AboutDialog` for About surfaces
 - Treat `D.Dialog` as a popup-style or in-content exception, not as the normal desktop dialog shell.
 - Do not custom-draw dialog shells, frames, or button areas.
+- For `D.DialogWindow`, let a DTK-owned `D.DialogButtonBox` own the action footer. Do not hand-build a bare `RowLayout` or `Flow` button row in the dialog body.
+- Standard desktop dialogs must keep one DTK-owned action row, with the secondary or cancel action on the left and the primary or destructive action on the right.
+- When that DTK-owned action row has multiple buttons, they must evenly split the available footer width instead of shrinking to label width. In QML, set `Layout.fillWidth: true` and the same `Layout.preferredWidth` on each action button.
+- If the local DTK declarative footer path still refuses to split widths evenly or renders the buttons incorrectly, fall back to one local equal-width footer row built from DTK buttons with a standard top divider, and mark the file with `uos-design: allow-manual-dialog-action-row`. Do not move that fallback into a reusable wrapper component.
+- Do not leave page-style vertical margins or wide gaps around that standard dialog footer row.
+- Do not wrap `D.DialogButtonBox` in a custom reusable footer component that overrides its `contentItem` structure unless a narrow waiver documents the platform blocker.
 - Keep DTK-owned title bars on standard DTK About and Settings surfaces unless a validated platform defect requires a fallback.
 - For `Settings.SettingsDialog`, keep a root `title` and root `icon`.
 - Use `Settings.CheckBox`, `Settings.ComboBox`, and `Settings.LineEdit` when those controls are locally exported.

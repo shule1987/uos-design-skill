@@ -19,6 +19,7 @@ inclusion: manual
 - 规则：live sampling 是对“同窗口内容读感”的补充，不是结构替代。`Theme.bg` 内容基面和 `D.StyledBehindWindowBlur` 仍应保留。
 - 规则：不要在 live sampling 之后再加一层整面 `Rectangle` 染色层。色相和明度调节优先放在 `MultiEffect` 参数和 `blendColor` token 中处理。
 - 规则：header 右侧工具栏叠层的 tint alpha 仍参照 Unote：浅色 `0.7`，深色卡片/仪表板页 `0.6`，深色明细/线性页 `0.8`；但 tint 的 RGB 必须与主窗口背景 `Theme.bg` 一致，不再使用独立 toolbar 色。
+- 规则：如果 header 下方没有二级 toolbar，则右侧 header overlay 不应默认常亮。静止时保持视觉上无独立叠层背景；当滚动内容刚开始进入 header 所在区域并与之重叠时，再用短时长淡入把 overlay 显示出来。
 - 规则：header live-sampled blur 的参数仍以 `blur: 0.62`、`blurMax: 72`、`saturation: 1.04`、`brightness: Theme.dark ? 0.06 : 0.03` 为基线，但 sampled blur layer 自身的 `opacity` 必须降到旧全强度配方的一半，默认读作 `0.5`。
 - 规则：上述 Unote 叠层只属于右侧 header content band。侧边栏顶部任何时候都不允许再单独绘制一条工具栏背景去覆盖 sidebar 自身表面。
 - 规则：内容可以 underlap 到 header 下方，但 scrollbar 轨道不可以。所有内容区滚动条都必须从可视内容区顶部开始，不能穿透到 header toolbar 或二级 toolbar 内。

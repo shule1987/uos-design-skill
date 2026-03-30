@@ -33,7 +33,9 @@ import org.deepin.dtk.settings 1.0 as Settings
   - `D.ThemeMenu`
   - `D.FloatingMessage`
 - 对话框：
+  - `D.DialogWindow`
   - `D.Dialog`
+  - `D.DialogButtonBox`
   - `D.AboutDialog`
   - `Settings.SettingsDialog`
 - 输入与常用控件：
@@ -68,6 +70,18 @@ import org.deepin.dtk.settings 1.0 as Settings
 
 - 应用级设置页 / 设置对话框默认使用 `Settings.SettingsDialog`。
 - 不要为设置界面另起自定义 `Popup`、`Dialog` 容器或自绘设置窗框。
+
+### 2.1 标准桌面对话框动作区
+
+- 标准桌面对话框默认使用 `D.DialogWindow`。
+- `D.DialogWindow` 的动作区默认由 `D.DialogButtonBox` 负责收口和对齐。
+- 允许在 `D.DialogButtonBox` 内放置 `D.Button`、`D.RecommandButton`、`D.WarningButton` 等 DTK 按钮，但按钮角色必须通过 `DialogButtonBox.buttonRole` 归入 DTK 动作区，而不是在对话框正文里手写一排 `RowLayout` / `Flow` 按钮。
+- 标准双按钮桌面对话框必须使用单排 `D.DialogButtonBox` 动作区，不要保留页内式的大间距或额外上下留白。
+- 当 `D.DialogButtonBox` 内存在多个动作按钮时，按钮必须均分可用 footer 宽度；在 QML 里不要假设 DTK 会自动拉伸，直接给每个按钮声明 `Layout.fillWidth: true` 和相同的 `Layout.preferredWidth`。
+- 如果本机 DTK declarative 上 `D.DialogButtonBox` 的直接子按钮路径仍然按隐式宽度收缩，或者实际渲染把按钮做没了，则回退到当前对话框里的单行等宽 footer 行：顶部 1px 分隔线，下面一排 DTK 按钮等宽铺满，并用 `uos-design: allow-manual-dialog-action-row` 标记；不要再把这层 fallback 封装进自定义 footer wrapper。
+- 标准双按钮桌面对话框的动作顺序固定为次要 / 取消在左，主要 / 确认 / 危险动作在右。
+- 不要在 `D.DialogWindow` 的内容区直接摆裸 `RowLayout` / `Flow` 按钮 footer 来模拟对话框底栏。
+- 不要再包一层自定义 `DialogActionFooter` 一类的组件去重写 `D.DialogButtonBox` 的 `contentItem` 结构；默认直接在 `D.DialogButtonBox` 内放 DTK 按钮并设置 `DialogButtonBox.buttonRole`。
 
 ### 3. About
 
@@ -105,7 +119,9 @@ import org.deepin.dtk.settings 1.0 as Settings
 ### 7. 互斥按钮组
 
 - 当两个及以上互斥过滤、模式或状态按钮需要成组出现，且本机已导出 `D.ButtonBox`、`D.ButtonGroup` 或 `D.ControlGroup` 时，默认优先使用这些 DTK 组按钮路径。
+- 当使用 `D.ButtonBox` 时，按钮默认已经进入它内建的 `group`。如果需要显式读写当前选中项，直接通过 `buttonBox.group` 访问，不要再给内部按钮额外绑定外部 `ButtonGroup.group`。
 - 默认保持整组按钮在一行内完整显示；不要把互斥选项做成散装 `D.Button` / `D.ToolButton` 列表，也不要让整组自动换行成多行。
+- 互斥按钮之间的可见间距不得超过 `10px`；不要为了装饰留出明显的大缝隙。
 - 只有在窗口宽度、平台限制或本机控件缺陷被明确证明时，才允许偏离这一规则，并且必须写 `uos-design: allow-wrapped-mutually-exclusive-group`。
 
 ## 直接禁用的误用

@@ -36,6 +36,8 @@ Apply `references/policies/sidebar.md`.
 Apply `references/policies/dialogs-settings.md`.
 
 - Standard desktop dialogs, About surfaces, or settings windows still bypass `D.DialogWindow`, `Settings.SettingsDialog`, or `D.AboutDialog` in favor of custom shells or popup-style `D.Dialog` where those DTK paths exist locally.
+- A `D.DialogWindow` still hand-builds its footer with a bare `RowLayout` or `Flow` button row instead of a DTK-owned `D.DialogButtonBox` action area.
+- A standard desktop dialog still bypasses a DTK-owned `D.DialogButtonBox` action row, flips the secondary-left / primary-right ordering, leaves a multi-action footer shrinking to content width instead of evenly splitting usable width, wraps that footer in a custom `contentItem` override, or still leaves page-style vertical margins around the action row.
 - A `Settings.SettingsDialog` path still omits the root `icon`, bypasses locally exported settings controls without justification, or exposes restore-default as a normal settings row.
 - In-app transient notifications still bypass locally exported DTK `FloatingMessage` in favor of custom transient shells.
 
@@ -53,8 +55,10 @@ Apply `references/policies/theme-icons.md`.
 Apply `references/policies/layout-density.md`.
 
 - Variable-length data surfaces still ship as oversized per-item cards, clipped fixed-width rows, or horizontally scrolling desktop lists without a narrow exception.
-- Text or button content still overlaps, visible content is still cut off horizontally, child content still bleeds outside its host region, or card content insets still drop below the 6px floor.
-- Multi-line row delegates still lack a leading icon by default, hardcode one shared icon for all items, use untruthful height contracts, or rely on self-referential or shadowed bindings.
+- Text or button content still overlaps, visible content is still cut off horizontally, child content still bleeds outside its host region, card shells still miss the fixed `1px` edge stroke, or card content insets still drop below the `8px` floor.
+- A mutually exclusive button row still leaves more than `10px` of visible spacing between adjacent peer buttons.
+- A `D.ButtonBox` child button is still rebound into a second external `ButtonGroup` instead of using the box's built-in `group`.
+- Single-line or multi-line row delegates still use the wrong leading icon size, non-file/non-app truthful lists still use live file or app icons, list leading icons still draw self-made background tiles, list content still sits off-center in the live list lane, or delegates still rely on self-referential or shadowed bindings.
 - Buttons still stretch far beyond their content needs without an explicit maximum width or justified exception.
 - Desktop work surfaces still leave large unused side gutters while the main content is artificially narrowed without an explicit readability or product requirement.
 

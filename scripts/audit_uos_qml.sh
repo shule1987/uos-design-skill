@@ -41,12 +41,17 @@ It reports blocking findings for:
 - application main menus missing `System` / `Light` / `Dark` theme switching
 - repeated trailing-control rows that do not expose a dedicated right-side control slot
 - shadowed delegate role names that can blank or corrupt repeated rows
-- multi-line list rows that omit the required leading icon or use a nonstandard icon size
+- list rows that omit the required leading icon, use a nonstandard `16px` or `24px` icon size, or use live object icons outside truthful file/app lists
+- multi-line list row primitives whose leading icon lane is not top-aligned with the text column
+- list leading icons that still draw self-made background tiles or capsules
 - standalone in-content settings buttons when the app already exposes a main menu
 - oversized card shells with obviously large fixed heights
 - focal card content that binds to zero-padding card edges without an inner safe area
+- card background layers that omit the required fixed 1px stroke or scale that stroke with UI helpers
 - auto-generated structural thumbnails that appear in cards without an explicit subdued mode
 - structural thumbnail components that omit a fixed 1px edge stroke or still render preview ink with pure strong black/white semantics
+- page-level manual card-pair equalization helpers instead of reusable audited 2-column card-band primitives
+- row-aware metric, scene, or gallery card primitives mounted under plain GridLayout instead of the responsive equalization host they require
 - focal graphic wrappers that advertise less height than the contained focal visual and therefore collapse surrounding spacing
 - fill-anchored layout children inside column-flow card primitives that rely on Layout.fillHeight spacers and therefore bypass the card sizing flow
 - repeated functional-row delegates that hardcode one literal bundled icon for all rows
@@ -56,11 +61,11 @@ It reports blocking findings for:
 - explicit horizontal-scrolling list/table patterns in primary desktop surfaces
 - width-constrained dynamic text that lacks explicit wrap or elide handling and can be cut off horizontally
 - unclipped list or flickable viewports, and child blocks that bleed outside cards or viewport hosts
-- runtime geometry findings, when the repo exposes the `UOS_DESIGN_VISUAL_AUDIT` hook, for rendered text overlap, horizontal cutoff, content escaping preview/card/viewport hosts, and near-height card rows that still fail to align
+- runtime geometry findings, when the repo exposes the `UOS_DESIGN_VISUAL_AUDIT` hook, for rendered text overlap, horizontal cutoff, content escaping preview/card/viewport hosts, near-height card rows that still fail to align, and equal-height 2-column card rows that leave one sparse card with a large dead vertical gap
 - scrollbars whose visible thickness exceeds 20px
 - internal textless progress indicators whose visible thickness exceeds 20px or lacks an explicit cap
 - dense icon/text/button clusters with explicit zero spacing
-- cards whose explicit content inset falls below 6px
+- cards whose explicit content inset falls below 8px
 - selected sidebar items that add a border or outline
 - persistent-sidebar collapse toggles that use generic chevrons or arrows
 - moving or duplicated top-left logo slots across sidebar expand/collapse
@@ -111,9 +116,12 @@ It reports blocking findings for:
 - variable-length file/app/data list rows or reusable cards that allow wrapped text to sprawl beyond a compact 1-2 line baseline
 - variable-length file/app/program/startup/service/data page lists that still use per-item standalone cards or legacy oversized settings-row templates instead of compact responsive rows
 - mutually exclusive filter/mode/state button sets that ignore local DTK grouped-button controls or wrap across multiple rows without waivers
+- mutually exclusive button groups that leave more than 10px between adjacent peer buttons
+- D.ButtonBox children rebound into a second external ButtonGroup instead of using ButtonBox.group
 - one surface rendering the same numeric ratio through both circular/ring progress and horizontal progress
 - popup-style `D.Dialog` usage in desktop app code when local `DialogWindow` exists and no waiver explains the exception
-- `DialogButtonBox` usage inside app dialog code even though the local `DialogWindow` standard path expects DTK button rows
+- `D.DialogWindow` bodies that hand-build a bare `RowLayout` / `Flow` button footer instead of routing actions through `D.DialogButtonBox`
+- DTK dialog footers that keep page-style vertical margins around the action row, fail to evenly split multi-action footer width, or wrap `D.DialogButtonBox` through custom structural overrides
 - DTK dialogs that stack multiple separate action-button rows instead of one standard action row
 - vertically stacked multi-button action areas inside normal cards or dialogs
 - self-drawn overlay layers inside DTK dialogs
@@ -158,9 +166,11 @@ grep_repo() {
         --exclude-dir=.cache \
         --exclude-dir=.codex \
         --exclude-dir=build \
+        --exclude-dir=build-deb \
         --exclude-dir=build-codex \
         --exclude-dir=cmake-build-debug \
         --exclude-dir=cmake-build-release \
+        --exclude-dir=_CPack_Packages \
         --exclude-dir=dist \
         --exclude-dir=node_modules \
         "$pattern" \
@@ -176,9 +186,11 @@ list_qml_files() {
         -o -path "$ROOT/.cache" \
         -o -path "$ROOT/.codex" \
         -o -path "$ROOT/build" \
+        -o -path "$ROOT/build-deb" \
         -o -path "$ROOT/build-codex" \
         -o -path "$ROOT/cmake-build-debug" \
         -o -path "$ROOT/cmake-build-release" \
+        -o -path "$ROOT/_CPack_Packages" \
         -o -path "$ROOT/dist" \
         -o -path "$ROOT/node_modules" \) -prune \
         -o -type f -name '*.qml' -print0
@@ -192,9 +204,11 @@ list_source_files() {
         -o -path "$ROOT/.cache" \
         -o -path "$ROOT/.codex" \
         -o -path "$ROOT/build" \
+        -o -path "$ROOT/build-deb" \
         -o -path "$ROOT/build-codex" \
         -o -path "$ROOT/cmake-build-debug" \
         -o -path "$ROOT/cmake-build-release" \
+        -o -path "$ROOT/_CPack_Packages" \
         -o -path "$ROOT/dist" \
         -o -path "$ROOT/node_modules" \) -prune \
         -o -type f \( -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' -o -name '*.h' -o -name '*.hpp' \) -print0
@@ -509,7 +523,7 @@ file_has_root_dtk_template_control() {
         /^[[:space:]]*$/ { next }
         /^[[:space:]]*\/\// { next }
         {
-            if ($0 ~ /^[[:space:]]*D\.(Switch|CheckBox|ComboBox|Button|TextField|Menu|Dialog|ProgressBar)[[:space:]]*\{/) {
+            if ($0 ~ /^[[:space:]]*D\.(Switch|CheckBox|ComboBox|Button|TextField|Menu|Dialog|DialogButtonBox|ProgressBar)[[:space:]]*\{/) {
                 print "yes"
             }
             exit
@@ -1851,12 +1865,192 @@ detect_multiline_setting_row_icon_size_hits() {
 
                 depth += delta
                 if (depth <= 0) {
-                    if (has_multiline && leading_width > 0 && leading_width != 24 && leading_width != 32) {
-                        printf "%s: multi-line SettingRow uses leadingWidth %d; expected 24 or 32 icon baseline\n", start, leading_width
+                    if (has_multiline && leading_width > 0 && leading_width != 24) {
+                        printf "%s: multi-line SettingRow uses leadingWidth %d; expected 24 icon baseline\n", start, leading_width
+                    }
+                    if (!has_multiline && leading_width > 0 && leading_width != 16) {
+                        printf "%s: single-line SettingRow uses leadingWidth %d; expected 16 icon baseline\n", start, leading_width
                     }
                     in_row = 0
                 }
             }
+        }
+    ' "$file"
+}
+
+detect_list_leading_icon_background_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        BEGIN {
+            in_row = 0
+            row_depth = 0
+            in_leading = 0
+            leading_depth = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_row && line ~ /^[[:space:]]*(SettingRow|SettingsOptionRow)[[:space:]]*\{/) {
+                in_row = 1
+                row_depth = 0
+                in_leading = 0
+                leading_depth = 0
+            }
+
+            if (in_row) {
+                if (row_depth == 1 && line ~ /^[[:space:]]*iconBackground([A-Za-z]+)?[[:space:]]*:/ \
+                    && line !~ /(false|Qt\.transparent|transparent|""|undefined|null)/)
+                {
+                    printf "%s: list leading icon must not declare a self-drawn background\n", NR
+                }
+
+                if (!in_leading && row_depth == 1 \
+                    && line ~ /^[[:space:]]*(leading|iconDelegate|iconItem)[[:space:]]*:[[:space:]]*Component[[:space:]]*\{/)
+                {
+                    in_leading = 1
+                    leading_depth = 0
+                }
+
+                if (in_leading) {
+                    if (line ~ /^[[:space:]]*(Rectangle|D\.BoxPanel|D\.BackgroundPanel)[[:space:]]*\{/) {
+                        printf "%s: list leading icon must not be wrapped in a self-drawn background block\n", NR
+                    }
+
+                    leading_depth += delta
+                    if (leading_depth <= 0)
+                        in_leading = 0
+                }
+
+                row_depth += delta
+                if (row_depth <= 0)
+                    in_row = 0
+            }
+        }
+    ' "$file"
+}
+
+detect_multiline_row_top_alignment_hits() {
+    local file="$1"
+    local base
+    base="$(basename "$file")"
+
+    case "$base" in
+        SettingRow.qml|TaskRow.qml)
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        BEGIN {
+            in_column = 0
+            depth = 0
+            start = 0
+            has_top_alignment = 0
+            saw_wrapped_text = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_column && line ~ /^[[:space:]]*ColumnLayout[[:space:]]*\{/) {
+                in_column = 1
+                depth = 0
+                start = NR
+                has_top_alignment = 0
+                saw_wrapped_text = 0
+            }
+
+            if (in_column) {
+                if (depth == 1 && line ~ /^[[:space:]]*Layout\.alignment[[:space:]]*:/ && line ~ /Qt\.AlignTop/)
+                    has_top_alignment = 1
+                if (line ~ /wrapMode[[:space:]]*:[[:space:]]*Text\.WordWrap/)
+                    saw_wrapped_text = 1
+
+                depth += delta
+                if (depth <= 0) {
+                    if (saw_wrapped_text && !has_top_alignment)
+                        printf "%s: multi-line row text column is not top-aligned, so the leading icon will read as vertically centered\n", start
+                    in_column = 0
+                }
+            }
+        }
+    ' "$file"
+}
+
+detect_row_aware_card_without_responsive_grid_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function push_type(type_name, start_line, active_depth) {
+            stack_size += 1
+            stack_type[stack_size] = type_name
+            stack_line[stack_size] = start_line
+            stack_depth[stack_size] = active_depth
+        }
+
+        function pop_type() {
+            if (stack_size > 0) {
+                delete stack_type[stack_size]
+                delete stack_line[stack_size]
+                delete stack_depth[stack_size]
+                stack_size -= 1
+            }
+        }
+
+        function has_responsive_host(   i) {
+            for (i = stack_size; i >= 1; --i) {
+                if (stack_type[i] == "ResponsiveCardGrid")
+                    return 1
+            }
+            return 0
+        }
+
+        BEGIN {
+            stack_size = 0
+            total_depth = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (line ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_.]*[[:space:]]*\{/) {
+                type_name = line
+                sub(/^[[:space:]]*/, "", type_name)
+                sub(/[[:space:]]*\{.*/, "", type_name)
+                if ((type_name == "MetricTile" || type_name == "StateSceneCard" || type_name == "ComponentGalleryCard") && !has_responsive_host())
+                    printf "%s: %s is mounted outside ResponsiveCardGrid, so row-aware equalization is bypassed\n", NR, type_name
+                push_type(type_name, NR, total_depth + 1)
+            }
+
+            total_depth += delta
+            while (stack_size > 0 && total_depth < stack_depth[stack_size])
+                pop_type()
         }
     ' "$file"
 }
@@ -1923,11 +2117,17 @@ detect_wide_button_hits() {
             has_fill = 0
             has_max = 0
             wide_width = -1
+            footer_top = 0
         }
 
         {
             line = $0
             delta = brace_delta(line)
+
+            if (line ~ /^[[:space:]]*(DialogActionFooter|D\.DialogButtonBox)[[:space:]]*\{/) {
+                footer_top++
+                footer_depth[footer_top] = 0
+            }
 
             if (!in_button && line ~ /^[[:space:]]*((D\.)?(Button|RecommandButton|WarningButton)|QQC\.Button|Button)[[:space:]]*\{/) {
                 in_button = 1
@@ -1936,6 +2136,7 @@ detect_wide_button_hits() {
                 has_fill = 0
                 has_max = 0
                 wide_width = -1
+                button_inside_dialog_footer = (footer_top > 0)
             }
 
             if (in_button) {
@@ -1959,13 +2160,21 @@ detect_wide_button_hits() {
 
                 depth += delta
                 if (depth <= 0) {
-                    if (wide_width > 0) {
+                    if (!button_inside_dialog_footer && wide_width > 0) {
                         printf "%s: button width %d exceeds the capped-width baseline\n", start, wide_width
                     }
-                    if (has_fill && !has_max) {
+                    if (!button_inside_dialog_footer && has_fill && !has_max) {
                         printf "%s: fill-width button lacks maximumWidth or Layout.maximumWidth\n", start
                     }
                     in_button = 0
+                }
+            }
+
+            if (footer_top > 0) {
+                footer_depth[footer_top] += delta
+                while (footer_top > 0 && footer_depth[footer_top] <= 0) {
+                    delete footer_depth[footer_top]
+                    footer_top--
                 }
             }
         }
@@ -3151,11 +3360,11 @@ detect_tight_card_padding_hits() {
                 if (depth == 1) {
                     if (line ~ /^[[:space:]]*(padding|leftPadding|rightPadding|topPadding|bottomPadding|horizontalPadding|verticalPadding)[[:space:]]*:[[:space:]]*([0-9]+|[0-9]+\.[0-9]+)([[:space:]]*(\/\/.*)?$)/) {
                         value = numeric_value(line)
-                        if (value < 6)
-                            printf "%s: card content inset %.3g is below the 6px minimum\n", NR, value
+                        if (value < 8)
+                            printf "%s: card content inset %.3g is below the 8px minimum\n", NR, value
                     }
                     if (line ~ /^[[:space:]]*(padding|leftPadding|rightPadding|topPadding|bottomPadding|horizontalPadding|verticalPadding)[[:space:]]*:[[:space:]]*Theme\.spacingXS([^A-Za-z0-9_]|$)/)
-                        printf "%s: card content inset uses Theme.spacingXS and falls below the 6px minimum\n", NR
+                        printf "%s: card content inset uses Theme.spacingXS and falls below the 8px minimum\n", NR
                 }
 
                 depth += delta
@@ -4230,6 +4439,8 @@ detect_unified_toolbar_divider_hits() {
             }
 
             BEGIN {
+                in_dialog = 0
+                dialog_depth = 0
                 in_rect = 0
                 depth = 0
                 start = 0
@@ -4240,6 +4451,11 @@ detect_unified_toolbar_divider_hits() {
             {
                 line = $0
                 delta = brace_delta(line)
+
+                if (!in_dialog && line ~ /^[[:space:]]*D\.DialogWindow[[:space:]]*\{/) {
+                    in_dialog = 1
+                    dialog_depth = 0
+                }
 
                 if (!in_rect && line ~ /^[[:space:]]*Rectangle[[:space:]]*\{/) {
                     in_rect = 1
@@ -4257,10 +4473,16 @@ detect_unified_toolbar_divider_hits() {
 
                     depth += delta
                     if (depth <= 0) {
-                        if (has_height && has_color)
+                        if (!in_dialog && has_height && has_color)
                             printf "%s: unified toolbar must not add an extra divider line\n", start
                         in_rect = 0
                     }
+                }
+
+                if (in_dialog) {
+                    dialog_depth += delta
+                    if (dialog_depth <= 0)
+                        in_dialog = 0
                 }
             }
         ' "$file"
@@ -4948,9 +5170,218 @@ detect_popup_style_dtk_dialog_hits() {
     grep -nE '^[[:space:]]*D\.Dialog[[:space:]]*\{' "$file" || true
 }
 
-detect_dialog_button_box_hits() {
+detect_manual_dialog_action_row_hits() {
     local file="$1"
-    grep -nE 'DialogButtonBox' "$file" || true
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function reset_row() {
+            in_row = 0
+            row_depth = 0
+            row_start = 0
+            row_button_count = 0
+            row_inside_button_box = 0
+        }
+
+        BEGIN {
+            in_dialog = 0
+            dialog_depth = 0
+            in_button_box = 0
+            button_box_depth = 0
+            reset_row()
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_dialog && line ~ /^[[:space:]]*D\.(Dialog|DialogWindow)[[:space:]]*\{/) {
+                in_dialog = 1
+                dialog_depth = 0
+                in_button_box = 0
+                button_box_depth = 0
+                reset_row()
+            }
+
+            if (in_dialog) {
+                if (!in_button_box && line ~ /^[[:space:]]*D\.DialogButtonBox[[:space:]]*\{/) {
+                    in_button_box = 1
+                    button_box_depth = 0
+                }
+
+                if (!in_row && line ~ /^[[:space:]]*(Row|RowLayout|Flow)[[:space:]]*\{/) {
+                    in_row = 1
+                    row_depth = 0
+                    row_start = NR
+                    row_button_count = 0
+                    row_inside_button_box = in_button_box
+                }
+
+                if (in_row && line ~ /^[[:space:]]*((D\.)?(Button|RecommandButton|WarningButton|ToolButton|RoundButton|DelayButton)|QQC2?\.Button|Button)[[:space:]]*\{/)
+                    row_button_count++
+
+                if (in_row) {
+                    row_depth += delta
+                    if (row_depth <= 0) {
+                        if (row_button_count > 0 && !row_inside_button_box)
+                            printf "%s: DTK dialog hand-builds a button row in its body; use D.DialogButtonBox as the dialog action owner instead\n", row_start
+                        reset_row()
+                    }
+                }
+
+                if (in_button_box) {
+                    button_box_depth += delta
+                    if (button_box_depth <= 0) {
+                        in_button_box = 0
+                        button_box_depth = 0
+                    }
+                }
+
+                dialog_depth += delta
+                if (dialog_depth <= 0) {
+                    in_dialog = 0
+                    in_button_box = 0
+                    button_box_depth = 0
+                    reset_row()
+                }
+            }
+        }
+    ' "$file"
+}
+
+detect_standard_dialog_footer_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function is_footer_start(s) {
+            return s ~ /^[[:space:]]*(DialogActionFooter|D\.DialogButtonBox)[[:space:]]*\{/
+        }
+
+        function is_button_start(s) {
+            return s ~ /^[[:space:]]*((D\.)?(Button|RecommandButton|WarningButton)|QQC2?\.Button|Button)[[:space:]]*\{/
+        }
+
+        function reset_footer() {
+            in_footer = 0
+            footer_depth = 0
+            footer_start = 0
+            footer_button_count = 0
+            footer_fill_width_count = 0
+            footer_preferred_width_count = 0
+            footer_preferred_width_value = ""
+            footer_preferred_width_mismatch = 0
+            footer_margin_line = 0
+        }
+
+        function reset_button() {
+            in_button = 0
+            button_depth = 0
+            button_fill_width = 0
+            button_preferred_width = ""
+        }
+
+        BEGIN {
+            in_dialog = 0
+            dialog_depth = 0
+            reset_footer()
+            reset_button()
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_dialog && line ~ /^[[:space:]]*D\.(Dialog|DialogWindow)[[:space:]]*\{/) {
+                in_dialog = 1
+                dialog_depth = 0
+                reset_footer()
+                reset_button()
+            }
+
+            if (in_dialog) {
+                if (!in_footer && is_footer_start(line)) {
+                    in_footer = 1
+                    footer_depth = 0
+                    footer_start = NR
+                    footer_margin_line = 0
+                }
+
+                if (in_footer && !footer_margin_line && footer_depth == 1 &&
+                    line ~ /^[[:space:]]*Layout\.(topMargin|bottomMargin)[[:space:]]*:[[:space:]]*([1-9][0-9]*|[0-9]*\.[0-9]*[1-9][0-9]*)[[:space:]]*$/) {
+                    footer_margin_line = NR
+                }
+
+                if (in_footer && !in_button && is_button_start(line)) {
+                    in_button = 1
+                    button_depth = 0
+                    button_fill_width = 0
+                    button_preferred_width = ""
+                }
+
+                if (in_button) {
+                    if (button_depth == 1 && line ~ /^[[:space:]]*(Layout\.fillWidth|fillWidth)[[:space:]]*:[[:space:]]*true([[:space:]]*(\/\/.*)?)?$/)
+                        button_fill_width = 1
+
+                    if (button_depth == 1 && line ~ /^[[:space:]]*Layout\.preferredWidth[[:space:]]*:/) {
+                        value = line
+                        sub(/.*Layout\.preferredWidth[[:space:]]*:[[:space:]]*/, "", value)
+                        sub(/[[:space:]]*(\/\/.*)?$/, "", value)
+                        button_preferred_width = value
+                    }
+
+                    button_depth += delta
+                    if (button_depth <= 0) {
+                        footer_button_count++
+                        if (button_fill_width)
+                            footer_fill_width_count++
+                        if (button_preferred_width != "") {
+                            footer_preferred_width_count++
+                            if (footer_preferred_width_value == "")
+                                footer_preferred_width_value = button_preferred_width
+                            else if (footer_preferred_width_value != button_preferred_width)
+                                footer_preferred_width_mismatch = 1
+                        }
+                        reset_button()
+                    }
+                }
+
+                if (in_footer) {
+                    footer_depth += delta
+                    if (footer_depth <= 0) {
+                        if (footer_button_count >= 2 && footer_fill_width_count < footer_button_count) {
+                            printf "%s: DTK dialog footer with multiple actions must set Layout.fillWidth on every action button so the row uses the full footer width\n", footer_start
+                        }
+                        if (footer_button_count >= 2 && (footer_preferred_width_count < footer_button_count || footer_preferred_width_mismatch)) {
+                            printf "%s: DTK dialog footer with multiple actions must give every action button the same Layout.preferredWidth so widths split evenly\n", footer_start
+                        }
+                        if (footer_margin_line > 0) {
+                            printf "%s: DTK dialog footer must not keep page-style top or bottom margins around the action row\n", footer_margin_line
+                        }
+                        reset_footer()
+                        reset_button()
+                    }
+                }
+
+                dialog_depth += delta
+                if (dialog_depth <= 0) {
+                    in_dialog = 0
+                    reset_footer()
+                    reset_button()
+                }
+            }
+        }
+    ' "$file"
 }
 
 detect_vertical_action_stack_hits() {
@@ -5080,6 +5511,14 @@ detect_mutually_exclusive_button_group_hits() {
             return s ~ /^[[:space:]]*(D\.)?(ButtonBox|ButtonGroup|ControlGroup)[[:space:]]*\{/
         }
 
+        function group_kind(line) {
+            if (line ~ /^[[:space:]]*(D\.)?ButtonBox[[:space:]]*\{/)
+                return "ButtonBox"
+            if (line ~ /^[[:space:]]*(D\.)?ButtonGroup[[:space:]]*\{/)
+                return "ButtonGroup"
+            return "ControlGroup"
+        }
+
         function is_container_start(s) {
             return s ~ /^[[:space:]]*(Flow|Row|RowLayout|Column|ColumnLayout)[[:space:]]*\{/
         }
@@ -5149,13 +5588,41 @@ detect_mutually_exclusive_button_group_hits() {
             return ""
         }
 
-        function push_group(level) {
+        function extract_identifier_value(line,   tmp) {
+            tmp = line
+            sub(/^[^:]*:[[:space:]]*/, "", tmp)
+            sub(/[[:space:]]*\/\/.*$/, "", tmp)
+            gsub(/[[:space:]]/, "", tmp)
+            if (tmp ~ /^[A-Za-z_][A-Za-z0-9_.]*$/)
+                return tmp
+            return ""
+        }
+
+        function extract_numeric_literal(line,   tmp) {
+            tmp = line
+            sub(/^[^:]*:[[:space:]]*/, "", tmp)
+            sub(/[[:space:]]*\/\/.*$/, "", tmp)
+            if (match(tmp, /^-?[0-9]+(\.[0-9]+)?/))
+                return substr(tmp, RSTART, RLENGTH) + 0
+            return ""
+        }
+
+        function push_group(kind, level, start_line) {
             group_top++
+            group_kind_stack[group_top] = kind
             group_level[group_top] = level
+            group_start[group_top] = start_line
+            group_spacing[group_top] = ""
         }
 
         function pop_group() {
+            if (group_spacing[group_top] != "" && group_spacing[group_top] > 10) {
+                printf "%s: mutually exclusive button groups must keep adjacent button spacing at 10px or less\n", group_start[group_top]
+            }
+            delete group_kind_stack[group_top]
             delete group_level[group_top]
+            delete group_start[group_top]
+            delete group_spacing[group_top]
             group_top--
         }
 
@@ -5164,6 +5631,7 @@ detect_mutually_exclusive_button_group_hits() {
             container_kind_stack[container_top] = kind
             container_level[container_top] = level
             container_start[container_top] = start_line
+            container_spacing[container_top] = ""
         }
 
         function pop_container(   kind, start_line, key, parts, idx, count, best_count) {
@@ -5182,6 +5650,9 @@ detect_mutually_exclusive_button_group_hits() {
             }
 
             if (best_count >= 2) {
+                if (container_spacing[container_top] != "" && container_spacing[container_top] > 10) {
+                    printf "%s: mutually exclusive buttons must keep adjacent button spacing at 10px or less\n", start_line
+                }
                 if (kind == "Flow") {
                     printf "%s: mutually exclusive buttons must use a DTK grouped-button control and stay on one row; do not place them in Flow\n", start_line
                 } else if (kind == "Column" || kind == "ColumnLayout") {
@@ -5201,6 +5672,7 @@ detect_mutually_exclusive_button_group_hits() {
             delete container_kind_stack[container_top]
             delete container_level[container_top]
             delete container_start[container_top]
+            delete container_spacing[container_top]
             container_top--
         }
 
@@ -5210,6 +5682,7 @@ detect_mutually_exclusive_button_group_hits() {
             button_container = 0
             button_checked_prop = ""
             button_assign_prop = ""
+            button_group_ref = ""
             button_checkable = 0
         }
 
@@ -5229,7 +5702,19 @@ detect_mutually_exclusive_button_group_hits() {
                 push_container(container_kind(line), next_nest, NR)
 
             if (is_group_start(line))
-                push_group(next_nest)
+                push_group(group_kind(line), next_nest, NR)
+
+            if (group_top > 0 && nest == group_level[group_top] && line ~ /^[[:space:]]*spacing[[:space:]]*:/) {
+                spacing_value = extract_numeric_literal(line)
+                if (spacing_value != "")
+                    group_spacing[group_top] = spacing_value
+            }
+
+            if (group_top == 0 && container_top > 0 && nest == container_level[container_top] && line ~ /^[[:space:]]*spacing[[:space:]]*:/) {
+                spacing_value = extract_numeric_literal(line)
+                if (spacing_value != "")
+                    container_spacing[container_top] = spacing_value
+            }
 
             if (group_top == 0 && container_top > 0 && !in_button && is_button_start(line)) {
                 in_button = 1
@@ -5237,6 +5722,7 @@ detect_mutually_exclusive_button_group_hits() {
                 button_container = container_top
                 button_checked_prop = ""
                 button_assign_prop = ""
+                button_group_ref = ""
                 button_checkable = 0
             }
 
@@ -5245,14 +5731,21 @@ detect_mutually_exclusive_button_group_hits() {
                     button_checked_prop = extract_compare_prop(line)
                 if (button_depth == 1 && line ~ /^[[:space:]]*checkable[[:space:]]*:[[:space:]]*true([[:space:]]*(\/\/.*)?$)/)
                     button_checkable = 1
+                if (button_depth == 1 && line ~ /ButtonGroup\.group[[:space:]]*:/)
+                    button_group_ref = extract_identifier_value(line)
                 if (line ~ /onClicked[[:space:]]*:/ && button_assign_prop == "")
                     button_assign_prop = extract_assign_prop(line)
 
                 button_depth += delta
                 if (button_depth <= 0) {
-                    prop = button_checked_prop
-                    if (prop == "" && button_checkable)
-                        prop = button_assign_prop
+                    prop = ""
+                    if (button_group_ref != "")
+                        prop = "__group__" button_group_ref
+                    else {
+                        prop = button_checked_prop
+                        if (prop == "" && button_checkable)
+                            prop = button_assign_prop
+                    }
                     if (prop != "")
                         container_prop_count[button_container, prop]++
                     reset_button()
@@ -5271,6 +5764,67 @@ detect_mutually_exclusive_button_group_hits() {
         END {
             while (container_top > 0)
                 pop_container()
+        }
+    ' "$file"
+}
+
+detect_buttonbox_external_group_hits() {
+    local file="$1"
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        BEGIN {
+            in_button_box = 0
+            box_depth = 0
+            in_button = 0
+            button_depth = 0
+            button_start = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_button_box && line ~ /^[[:space:]]*D\.ButtonBox[[:space:]]*\{/) {
+                in_button_box = 1
+                box_depth = 0
+                in_button = 0
+                button_depth = 0
+                button_start = 0
+            } else if (in_button_box && !in_button && line ~ /^[[:space:]]*((D\.)?(ToolButton|Button|RecommandButton|WarningButton)|QQC\.Button|Button)[[:space:]]*\{/) {
+                in_button = 1
+                button_depth = 0
+                button_start = NR
+            }
+
+            if (in_button) {
+                if (line ~ /ButtonGroup\.group[[:space:]]*:/) {
+                    printf "%s: D.ButtonBox child buttons must use the box\\047s built-in group; do not bind them into a second external ButtonGroup\n", button_start
+                }
+
+                button_depth += delta
+                if (button_depth <= 0) {
+                    in_button = 0
+                    button_depth = 0
+                    button_start = 0
+                }
+            }
+
+            if (in_button_box) {
+                box_depth += delta
+                if (box_depth <= 0) {
+                    in_button_box = 0
+                    box_depth = 0
+                    in_button = 0
+                    button_depth = 0
+                    button_start = 0
+                }
+            }
         }
     ' "$file"
 }
@@ -5704,6 +6258,154 @@ detect_window_scene_preview_border_hits() {
     ' "$file"
 }
 
+detect_card_background_border_hits() {
+    local file="$1"
+    local base
+    base="$(basename "$file")"
+
+    case "$base" in
+        *Card*.qml|SectionCard.qml|MetricCard.qml)
+            ;;
+        *)
+            if ! grep -qE '^[[:space:]]*(SectionCard|MetricCard)[[:space:]]*\{' "$file"; then
+                return 0
+            fi
+            ;;
+    esac
+
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        function reset_card() {
+            in_card = 0
+            card_depth = 0
+        }
+
+        function reset_background() {
+            in_background = 0
+            background_depth = 0
+            background_start = 0
+            saw_border = 0
+            exact_border = 0
+            scaled_border = 0
+        }
+
+        BEGIN {
+            card_file = (FILENAME ~ /(^|\/)[^\/]*Card[^\/]*\.qml$/)
+            reset_card()
+            reset_background()
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_card && line ~ /^[[:space:]]*(SectionCard|MetricCard)[[:space:]]*\{/) {
+                in_card = 1
+                card_depth = 0
+            }
+
+            if (!in_background) {
+                if (((in_card && card_depth == 1) || (!in_card && card_file)) \
+                    && line ~ /^[[:space:]]*background[[:space:]]*:[[:space:]]*Rectangle[[:space:]]*\{/)
+                {
+                    in_background = 1
+                    background_depth = delta
+                    background_start = NR
+                    if (line ~ /border\.width[[:space:]]*:/) {
+                        saw_border = 1
+                        if (line ~ /border\.width[[:space:]]*:[[:space:]]*1(\.0+)?([[:space:]]*(\/\/.*)?$)/)
+                            exact_border = 1
+                        else
+                            scaled_border = 1
+                    }
+                    next
+                }
+            }
+
+            if (in_background) {
+                if (line ~ /^[[:space:]]*border\.width[[:space:]]*:/) {
+                    saw_border = 1
+                    if (line ~ /^[[:space:]]*border\.width[[:space:]]*:[[:space:]]*1(\.0+)?([[:space:]]*(\/\/.*)?$)/)
+                        exact_border = 1
+                    else
+                        scaled_border = 1
+                }
+
+                background_depth += delta
+                if (background_depth <= 0) {
+                    if (!saw_border || !exact_border || scaled_border) {
+                        printf "%s: card background should keep an explicit fixed 1px border with no UI-scale math\n", background_start
+                    }
+                    reset_background()
+                }
+            }
+
+            if (in_card) {
+                card_depth += delta
+                if (card_depth <= 0)
+                    reset_card()
+            }
+        }
+    ' "$file"
+}
+
+detect_nontruthful_live_list_icon_hits() {
+    local file="$1"
+    local base
+    base="$(basename "$file")"
+
+    case "$base" in
+        *File*.qml|*App*.qml|*Program*.qml|*Software*.qml)
+            return 0
+            ;;
+    esac
+
+    if ! grep -qE 'SettingRow|SettingsOptionRow|TaskRow|ListItem|Sidebar|Navigation|Nav|ListView|Repeater|delegate[[:space:]]*:' "$file"; then
+        return 0
+    fi
+
+    awk '
+        function brace_delta(s,   tmp, opens, closes) {
+            tmp = s
+            opens = gsub(/\{/, "{", tmp)
+            closes = gsub(/\}/, "}", tmp)
+            return opens - closes
+        }
+
+        BEGIN {
+            in_row = 0
+            row_depth = 0
+        }
+
+        {
+            line = $0
+            delta = brace_delta(line)
+
+            if (!in_row && line ~ /^[[:space:]]*(SettingRow|SettingsOptionRow|TaskRow|ListItem|SidebarItem|NavItem|NavigationItem)[[:space:]]*\{/) {
+                in_row = 1
+                row_depth = 0
+            }
+
+            if (in_row) {
+                if (line ~ /^[[:space:]]*iconName[[:space:]]*:[[:space:]]*([^"].*|".+")/)
+                    printf "%s: non-file/non-app truthful lists should prefer downloaded or bundled SVG icons, not iconName/live object icons\n", NR
+                if (line ~ /^[[:space:]]*(iconSource|source)[[:space:]]*:[[:space:]].*(image:\/\/|appIcon|fileIcon|mimeIcon|desktop(App|File)|QFileIconProvider|iconProvider)/)
+                    printf "%s: non-file/non-app truthful lists should prefer downloaded or bundled SVG icons, not live object icon providers\n", NR
+
+                row_depth += delta
+                if (row_depth <= 0)
+                    in_row = 0
+            }
+        }
+    ' "$file"
+}
+
 detect_window_scene_preview_strong_ink_hits() {
     local file="$1"
     grep -nE '^[[:space:]]*color[[:space:]]*:[[:space:]]*(Theme\.(textStrong|textSecondary|fgStrong|fgNormal)|"#([Ff]{3}|[Ff]{6}|[0]{3}|[0]{6})")' "$file" || true
@@ -5798,6 +6500,11 @@ detect_sidebar_width_squeeze_hits() {
             grep -n 'Behavior on width' "$file" || true
         fi
     fi
+}
+
+detect_manual_card_pair_equalization_hits() {
+    local file="$1"
+    grep -nE 'Theme\.equalizedCardPairHeight[[:space:]]*\(' "$file" || true
 }
 
 detect_window_scene_preview_subdued_hits() {
@@ -5972,11 +6679,18 @@ while IFS= read -r -d '' file; do
         done < <(detect_popup_style_dtk_dialog_hits "$file")
     fi
 
-    if (( dtk_available )) && dtk_has_export DialogWindow; then
+    if (( dtk_available )) && dtk_has_export DialogWindow && ! grep -q 'uos-design: allow-manual-dialog-action-row' "$file"; then
         while IFS= read -r hit; do
             [[ -z "$hit" ]] && continue
-            log_fail "dialog-button-box" "$rel:$hit"
-        done < <(detect_dialog_button_box_hits "$file")
+            log_fail "manual-dialog-action-row" "$rel:$hit"
+        done < <(detect_manual_dialog_action_row_hits "$file")
+    fi
+
+    if (( dtk_available )) && dtk_has_export DialogWindow && ! grep -q 'uos-design: allow-nonstandard-dialog-footer' "$file"; then
+        while IFS= read -r hit; do
+            [[ -z "$hit" ]] && continue
+            log_fail "dialog-standard-footer" "$rel:$hit"
+        done < <(detect_standard_dialog_footer_hits "$file")
     fi
 
     if ! grep -q 'uos-design: allow-multi-action-dialog-rows' "$file"; then
@@ -6233,11 +6947,23 @@ while IFS= read -r -d '' file; do
         done < <(detect_multiline_setting_row_missing_icon_hits "$file")
     fi
 
-    if ! grep -q 'uos-design: allow-nonstandard-list-icon-size' "$file"; then
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "list-icon-size" "$rel:$hit"
+    done < <(detect_multiline_setting_row_icon_size_hits "$file")
+
+    if ! grep -q 'uos-design: allow-multiline-list-icon-center' "$file"; then
         while IFS= read -r hit; do
             [[ -z "$hit" ]] && continue
-            log_fail "multiline-list-icon-size" "$rel:$hit"
-        done < <(detect_multiline_setting_row_icon_size_hits "$file")
+            log_fail "multiline-list-icon-alignment" "$rel:$hit"
+        done < <(detect_multiline_row_top_alignment_hits "$file")
+    fi
+
+    if ! grep -q 'uos-design: allow-row-aware-card-outside-responsive-grid' "$file"; then
+        while IFS= read -r hit; do
+            [[ -z "$hit" ]] && continue
+            log_fail "row-aware-card-grid-host" "$rel:$hit"
+        done < <(detect_row_aware_card_without_responsive_grid_hits "$file")
     fi
 
     if (( circular_score_fixed_typography )) && [[ "$(basename "$file")" != "CircularScore.qml" ]]; then
@@ -6293,6 +7019,11 @@ while IFS= read -r -d '' file; do
 
     while IFS= read -r hit; do
         [[ -z "$hit" ]] && continue
+        log_fail "card-shell-border" "$rel:$hit"
+    done < <(detect_card_background_border_hits "$file")
+
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
         log_fail "focal-wrapper-mismatch" "$rel:$hit"
     done < <(detect_focal_wrapper_mismatch_hits "$file")
 
@@ -6315,6 +7046,13 @@ while IFS= read -r -d '' file; do
                 log_fail "mutually-exclusive-button-group" "$rel:$hit"
             done < <(detect_mutually_exclusive_button_group_hits "$file")
         fi
+    fi
+
+    if (( dtk_available )) && dtk_has_export ButtonBox; then
+        while IFS= read -r hit; do
+            [[ -z "$hit" ]] && continue
+            log_fail "buttonbox-external-group" "$rel:$hit"
+        done < <(detect_buttonbox_external_group_hits "$file")
     fi
 
     if ! grep -q 'uos-design: allow-horizontal-list-scroll' "$file"; then
@@ -6545,6 +7283,19 @@ while IFS= read -r -d '' file; do
         done < <(detect_window_scene_preview_subdued_hits "$file")
     fi
 
+    case "$rel" in
+        qml/Theme.qml|qml/components/EqualizedCardPairBand.qml)
+            ;;
+        *)
+            if ! grep -q 'uos-design: allow-manual-card-pair-equalization' "$file"; then
+                while IFS= read -r hit; do
+                    [[ -z "$hit" ]] && continue
+                    log_fail "manual-card-pair-equalization" "$rel:$hit"
+                done < <(detect_manual_card_pair_equalization_hits "$file")
+            fi
+            ;;
+    esac
+
     if [[ "$(basename "$file")" == "WindowScenePreview.qml" ]] && ! grep -q 'uos-design: allow-thumbnail-without-border' "$file"; then
         while IFS= read -r hit; do
             [[ -z "$hit" ]] && continue
@@ -6569,17 +7320,25 @@ while IFS= read -r -d '' file; do
         log_fail "option-row-icon" "$rel:$hit"
     done < <(detect_option_row_icon_hits "$file")
 
-    if ! grep -q 'uos-design: allow-shared-functional-list-icon' "$file"; then
-        while IFS= read -r hit; do
-            [[ -z "$hit" ]] && continue
-            log_fail "shared-functional-row-icon" "$rel:$hit"
-        done < <(detect_repeated_functional_row_icon_hits "$file")
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "list-icon-background" "$rel:$hit"
+    done < <(detect_list_leading_icon_background_hits "$file")
 
-        while IFS= read -r hit; do
-            [[ -z "$hit" ]] && continue
-            log_fail "shared-functional-model-icon" "$rel:$hit"
-        done < <(detect_shared_functional_model_icon_hits "$file")
-    fi
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "list-live-icon" "$rel:$hit"
+    done < <(detect_nontruthful_live_list_icon_hits "$file")
+
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "shared-functional-row-icon" "$rel:$hit"
+    done < <(detect_repeated_functional_row_icon_hits "$file")
+
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        log_fail "shared-functional-model-icon" "$rel:$hit"
+    done < <(detect_shared_functional_model_icon_hits "$file")
 
     while IFS= read -r hit; do
         [[ -z "$hit" ]] && continue

@@ -5,8 +5,13 @@ Load this file for lists, tables, cards, row density, width strategy, and reusab
 - Keep variable-length file, app, service, startup-item, and data lists on a compact one-line or two-line row baseline by default.
 - Do not render those lists as large standalone cards per item unless the user explicitly asks for a card treatment.
 - Keep repeated rows with trailing controls on one shared trailing control column.
+- Only file lists and app or program lists with a truthful one-to-one item mapping may use live file or app icons. Other option, settings, navigation, and functional lists must prefer downloaded or bundled SVG assets.
+- In single-line list rows, keep the leading icon box at `16px`.
 - For multi-line list-like rows, keep a leading icon by default.
-- Default that leading icon to `24px` or `32px`.
+- Default that leading icon to `24px`.
+- In multi-line list-like rows, top-align the leading icon lane to the text column's top edge. Do not let minimum row height or centered sibling columns make the icon read as vertically centered within the whole row.
+- Do not draw self-made background tiles, chips, or capsules behind list leading icons.
+- Keep the live content block centered within the list lane. Do not leave a capped row composition pinned to one side of a wider list surface.
 - Use responsive column or slot widths for lists and tables. Do not rely on horizontal scrolling to rescue a desktop layout.
 - Width-constrained dynamic text in rows, cards, toolbars, or data surfaces must declare `wrapMode` or `elide`; do not let visible content be cut off horizontally by accident.
 - Do not keep scrollable lists artificially short when the surrounding surface still has obvious unused height.
@@ -22,9 +27,15 @@ Load this file for lists, tables, cards, row density, width strategy, and reusab
 - Avoid shadowing component API property names with same-named required model roles in delegates.
 - Keep capped-width page compositions centered as a whole within the available content area.
 - Keep cards close to the size their content actually needs. Avoid decorative empty gaps, oversized fixed heights, or obviously over-wide buttons.
-- Card content insets must not fall below `6px` on any active edge.
+- Card shells and background layers must keep an explicit fixed `1px` edge stroke. Do not scale that stroke with UI scale helpers or device-pixel math.
+- Card content insets must not fall below `8px` on any active edge.
+- Keep mutually exclusive button rows visually tight. Adjacent peer buttons in one mode, filter, or state group must not leave more than `10px` of visible gap.
 - Treat card collections as responsive grids, not loose piles of containers. Define column count, minimum card width, spans, and gutters per breakpoint, then place cards against that grid.
+- If a card primitive expects a responsive row-equalization host, for example by reading `equalizedHeightForItem(...)`, do not place it inside a plain `GridLayout`. Use the matching responsive grid primitive so same-row height constraints still execute.
 - When adjacent cards in the same visual row differ in height by less than about 40%, including row peers inside multi-column responsive card walls, bias toward matching the tallest card in that row and keeping the top and bottom edges aligned rather than preserving a small accidental mismatch. Deliberate multi-column spanning cards may keep their own height unless the composition explicitly requires full-row alignment.
+- In 2-column horizontal card bands, do not satisfy equal-height alignment by leaving one sparse card with a large dead vertical void. If borrowing the taller peer's height would leave roughly a third or more of the shorter card body as empty filler, recompose the row instead of stretching the shell.
+- Do not hand-code 2-column card equalization in page or business QML. Route exactly-two peer bands through a reusable primitive equivalent to `EqualizedCardPairBand`, and route asymmetric 2-column card compositions through a reusable primitive equivalent to `BalancedTwoColumnCardBand`.
+- Static audit should treat direct page-level `matchedCardHeight` or `Theme.equalizedCardPairHeight(...)` usage as a blocking finding unless the file is the sanctioned primitive or carries a narrow waiver.
 - Treat each card interior as a grid as well. Media, labels, metrics, body copy, meta rows, and action areas should align to stable internal tracks and baselines instead of freeform anchoring.
 - When the window width changes, adapt card layout by changing columns, spans, slot allocation, and stacking order. Do not preserve a broken composition by adding ad hoc margins or by shrinking typography first.
 - In normal cards and dialogs, keep multi-button action areas on one horizontal row by default. Do not use a vertical action stack unless the surface is unusually large and the exception is explicit.
