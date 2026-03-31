@@ -17,6 +17,7 @@ Load this file for theme variables, surfaces, palette integration, and icon beha
 - Only file lists and app or program lists with a truthful one-to-one item mapping may use live file or app icons. Other option, settings, navigation, and functional lists must prefer downloaded or bundled SVG assets.
 - Keep light-theme and dark-theme surfaces internally consistent. Do not mix a light page, light card, or light popup into a dark-theme interface, or vice versa, unless an explicit system-surface exception explains the reason.
 - Give every clickable surface a visible hover state in both light and dark themes. Do not ship clickable rows, cards, tiles, or icon affordances that look static on hover.
+- Do not hard cut hover, pressed, or lightweight selected-state feedback on clickable surfaces. Animate those color, border, opacity, or icon-tint deltas with theme motion tokens.
 - Prefer recolorable SVG assets for functional icons.
 - Do not rasterize symbolic functional icons unless a narrow exception justifies it.
 - For repeated functional rows outside truthful file or app lists, bind icon identity from item-level data to downloaded or bundled SVG assets rather than live file or app icon providers.

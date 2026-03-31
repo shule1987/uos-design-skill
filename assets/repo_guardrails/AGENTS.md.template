@@ -1,0 +1,24 @@
+# Repository Guidelines
+
+## Project Structure & Module Organization
+`src/main.cpp` should boot the Qt 6 desktop app and load the QML module for `__APP_NAME__`. Keep reusable UOS/DTK primitives under `src/qml/components`, shared tokens and state under `src/qml/theme` and `src/qml/data`, and business pages under `src/qml/pages`. Keep generated artifacts in `build/` only, and keep visual-audit scene manifests under `scripts/`.
+
+## Build, Test, and Development Commands
+Use the guarded path first:
+
+```bash
+bash scripts/uos_guard_build.sh . --configure
+cmake --build build --target uos_release_validate
+bash scripts/new_uos_page.sh ServiceDashboardPage service-content
+```
+
+`uos_guard_build.sh` assumes a CMake-based Qt desktop repo and runs the UOS static audit before compile. `uos_release_validate` should be wired to runtime geometry validation, screenshot capture, and smoke startup. Start new pages from `scripts/new_uos_page.sh` instead of blank QML files.
+
+## Coding Style & Naming Conventions
+Follow DTK/UOS patterns before custom QML. Keep theme tokens centralized, use 4-space indentation, `CamelCase.qml` for components, and descriptive lowerCamelCase ids and properties. Document the approved primitives in `src/qml/components` and make business pages consume those primitives first. Do not open-code page-level peer-card `Row` or `RowLayout` bands, custom sidebars, ad hoc frosted headers, or fixed card shell sizes in business QML.
+
+## Testing Guidelines
+Every shipped UI change should pass the guarded build path. Substantial UI work should also pass `cmake --build build --target uos_release_validate`, and the generated screenshots should be reviewed for obvious sidebar, seam, header, card-floor, and overflow defects before close-out.
+
+## Commit & Pull Request Guidelines
+Use short imperative commit subjects such as `ui: align sidebar lane with UOS guardrails`. PRs should summarize affected pages, mention audit and validation results, and include screenshots or short recordings for visible UI changes.

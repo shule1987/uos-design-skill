@@ -1,0 +1,3 @@
+# Repo-local UOS visual audit responsive-width coverage
+# Keep at least one narrower supported size in addition to the default runtime size.
+1040x720

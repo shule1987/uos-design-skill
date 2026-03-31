@@ -1,4 +1,4 @@
 interface:
   display_name: "UOS Design"
   short_description: "DTK-first UOS and Deepin QML desktop UI workflow"
-  default_prompt: "Use $uos-design to design, implement, or review a UOS or Deepin QML desktop UI. Inspect local Qt/DTK capability first, route to the smallest relevant references, prefer DTK controls, and run scripts/audit_uos_qml.sh around substantial edits."
+  default_prompt: "Use $uos-design to design, implement, or review a UOS or Deepin QML desktop UI. Inspect local Qt/DTK capability first, prefer sanctioned local primitives and repo guardrails over blank-page authoring, route to the smallest relevant references, run scripts/audit_uos_qml.sh around substantial edits, and finish with runtime validation plus screenshot review."

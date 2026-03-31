@@ -13,6 +13,9 @@ Load this file for desktop apps with a persistent primary left sidebar.
 - Keep an explicit right-side content base surface driven by documented theme variables.
 - Keep zero structural gap between sidebar and content and place the visible divider on the sidebar edge itself.
 - Keep `10px` horizontal inset between the sidebar surface and the navigation content on both sides.
+- Keep sidebar list rows visually left-aligned. Do not center sidebar list labels or the icon-text cluster inside the row background.
+- Keep the sidebar row background and its left-aligned content lane centered together within the sidebar surface by using symmetric insets, not by centering the text or icon block itself.
+- Every sidebar navigation row must expose a real row-level click or tap target. Do not ship purely visual rows that highlight on hover but do nothing when clicked.
 - Hide the group title when there is only one navigation group.
 - Keep `20px` vertical gaps between multiple navigation groups.
 - Keep the sidebar-bottom operational card area empty by default.

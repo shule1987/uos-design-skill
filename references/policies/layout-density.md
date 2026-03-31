@@ -10,6 +10,7 @@ Load this file for lists, tables, cards, row density, width strategy, and reusab
 - For multi-line list-like rows, keep a leading icon by default.
 - Default that leading icon to `24px`.
 - In multi-line list-like rows, top-align the leading icon lane to the text column's top edge. Do not let minimum row height or centered sibling columns make the icon read as vertically centered within the whole row.
+- In compact single-line rows, keep the leading icon vertically centered to the primary text block rather than floating above or below it.
 - Do not draw self-made background tiles, chips, or capsules behind list leading icons.
 - Keep the live content block centered within the list lane. Do not leave a capped row composition pinned to one side of a wider list surface.
 - Use responsive column or slot widths for lists and tables. Do not rely on horizontal scrolling to rescue a desktop layout.
@@ -20,15 +21,20 @@ Load this file for lists, tables, cards, row density, width strategy, and reusab
 - Let the live scroll container fill the content base directly. Keep page padding inside the content layout itself, not as outer margins on the `ScrollView`, page stack, or content host. Vertical scrollbars should land on the far-right edge of the content area instead of floating inside inset gutters.
 - When content visually underlaps a header or a second-level toolbar, keep that underlap for the content only. The scrollbar track and thumb must start at the top of the visible content region, below the header or secondary-toolbar band, rather than passing through those bars.
 - Keep text and button clusters free of overlap. Negative spacing, stacked centered siblings, and fill-parent label/button overlays are not acceptable layout escapes.
+- Keep vertical rhythm stable. Do not let row, heading, or card content collapse to near-zero top or bottom padding, and do not leave obviously lopsided top-versus-bottom whitespace around the live content block.
 - Keep cards, lists, and viewport hosts truthful about containment. Child blocks must not escape through negative margins, negative positional offsets, or geometry that exceeds the host bounds.
+- Card shells may use minimum and maximum width or height bounds, but they must not rely on fixed `width`, `height`, `implicitWidth`, or `implicitHeight` values. Keep shell size responsive to content and available width instead of pinning a static box.
 - When a live runtime geometry audit hook exists, use it to validate these containment rules against the rendered scene as well, including auxiliary scene windows instead of only the main shell. Static code review alone is not enough to sign off text overlap, horizontal clipping, host overflow, or near-height card-row alignment.
+- When the main window is resizable between a larger default size and a smaller supported minimum size, keep runtime audit coverage for at least one narrower supported size as well. Do not sign off responsive layouts from the default window size only.
 - Give reusable containers a truthful height contract. Do not compute `implicitHeight` from a plain anchored `Item` with no intrinsic height.
 - Avoid self-referential bindings such as `title: title` or `description: description`.
 - Avoid shadowing component API property names with same-named required model roles in delegates.
 - Keep capped-width page compositions centered as a whole within the available content area.
 - Keep cards close to the size their content actually needs. Avoid decorative empty gaps, oversized fixed heights, or obviously over-wide buttons.
+- Do not treat fixed card shell width or height as the normal spacing tool. Recompose with responsive tracks, stacking, or min/max bounds before resorting to a narrow waiver.
 - Card shells and background layers must keep an explicit fixed `1px` edge stroke. Do not scale that stroke with UI scale helpers or device-pixel math.
 - Card content insets must not fall below `8px` on any active edge.
+- Repeated list-row surfaces placed inside a card must reserve a second inner inset from the card content lane, typically at least `6px` per side. Do not let row backgrounds span flush to the card's live content width, and do not let the bottom-most repeated row collapse the card floor inset to `0px`.
 - Keep mutually exclusive button rows visually tight. Adjacent peer buttons in one mode, filter, or state group must not leave more than `10px` of visible gap.
 - Treat card collections as responsive grids, not loose piles of containers. Define column count, minimum card width, spans, and gutters per breakpoint, then place cards against that grid.
 - If a card primitive expects a responsive row-equalization host, for example by reading `equalizedHeightForItem(...)`, do not place it inside a plain `GridLayout`. Use the matching responsive grid primitive so same-row height constraints still execute.

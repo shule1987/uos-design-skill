@@ -14,3 +14,4 @@ Load this file when reviewing top-level windows, title bars, menus, and unified-
 - Verify that every symbolic app-side header button other than the application logo slot, including functional `leftContent` affordances and grouped page-switch buttons, explicitly uses `16x16` icon sizing unless a narrow waiver explains otherwise.
 - Verify that the top-left application logo in every application window uses the fixed `32x32` size instead of ad hoc per-window sizing.
 - Verify that the header reads as the frosted top layer above underlapping scrollable content and that the scroller's top and bottom extents account for the header overlap.
+- Verify that major page switches in the main work area do not hard cut and instead use a short opacity-plus-position transition through the real page host.

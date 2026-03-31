@@ -1,0 +1,39 @@
+find_program(BASH_EXECUTABLE bash REQUIRED)
+
+set(UOS_DESIGN_SKILL_ROOT "$ENV{HOME}/.codex/skills/uos-design")
+set(UOS_DESIGN_AUDIT_SCRIPT "${UOS_DESIGN_SKILL_ROOT}/scripts/audit_uos_qml.sh")
+set(UOS_DESIGN_VALIDATE_SCRIPT "${UOS_DESIGN_SKILL_ROOT}/scripts/validate_uos_release.sh")
+
+function(uos_design_attach_guardrails target)
+    if(NOT TARGET "${target}")
+        message(FATAL_ERROR "uos_design_attach_guardrails: target '${target}' does not exist")
+    endif()
+
+    if(EXISTS "${UOS_DESIGN_AUDIT_SCRIPT}")
+        if(NOT TARGET uos_static_audit)
+            add_custom_target(uos_static_audit
+                COMMAND "${BASH_EXECUTABLE}" "${UOS_DESIGN_AUDIT_SCRIPT}" "${CMAKE_SOURCE_DIR}"
+                WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+                COMMENT "Running UOS design static audit"
+                VERBATIM
+            )
+        endif()
+        add_dependencies("${target}" uos_static_audit)
+    else()
+        message(WARNING "UOS design audit script not found at ${UOS_DESIGN_AUDIT_SCRIPT}")
+    endif()
+
+    if(EXISTS "${UOS_DESIGN_VALIDATE_SCRIPT}")
+        if(NOT TARGET uos_release_validate)
+            add_custom_target(uos_release_validate
+                COMMAND "${BASH_EXECUTABLE}" "${UOS_DESIGN_VALIDATE_SCRIPT}" "--skip-configure" "--skip-build" "${CMAKE_SOURCE_DIR}"
+                WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+                DEPENDS "${target}"
+                COMMENT "Running UOS release validation"
+                VERBATIM
+            )
+        endif()
+    else()
+        message(WARNING "UOS design release validation script not found at ${UOS_DESIGN_VALIDATE_SCRIPT}")
+    endif()
+endfunction()

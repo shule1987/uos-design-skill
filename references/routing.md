@@ -16,6 +16,8 @@ Load this file when `SKILL.md` alone is not enough to choose the smallest releva
 
 - DTK availability and local exports:
   - `references/local-dtk-controls.md`
+- Repo-local guardrails, page scaffolds, and default developer workflow:
+  - `references/repo-guardrails.md`
 
 ## Broad Fallback References
 
@@ -38,6 +40,11 @@ Load this file when `SKILL.md` alone is not enough to choose the smallest releva
 - Platform compatibility, Wayland/X11, Qt/DTK runtime caveats:
   - Primary:
     - `references/platform-compatibility.md`
+- Repo bootstrap, guarded build integration, page scaffolds, or primitive-first authoring setup:
+  - Primary:
+    - `references/repo-guardrails.md`
+  - Action path when the task is to seed a new repo:
+    - `scripts/install_repo_guardrails.sh`
 - Window structure, title bars, and top-level layout:
   - Primary policy:
     - `references/policies/windowing.md`
@@ -97,6 +104,7 @@ Load this file when `SKILL.md` alone is not enough to choose the smallest releva
     - `references/review/theme-icons.md`
     - `references/review/layout-density.md`
     - `references/review/progress-charts.md`
+    - `references/review/obvious-visual-failures.md` when screenshot-level defects are a risk or when closing a shipped UI change
   - Final review close-out. Load before finishing a substantial review close-out or implementation close-out:
     - `references/review/close-out.md`
 

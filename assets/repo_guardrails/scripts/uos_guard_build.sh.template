@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: scripts/uos_guard_build.sh [repo-root] [--configure] [--validate]
+
+Guarded developer entry for UOS design work.
+Assumes a CMake-based Qt desktop project and always runs the UOS static audit before compiling.
+EOF
+}
+
+ROOT=""
+force_configure=0
+run_validate=0
+
+for arg in "$@"; do
+    case "$arg" in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --configure)
+            force_configure=1
+            ;;
+        --validate)
+            run_validate=1
+            ;;
+        *)
+            if [[ -z "$ROOT" ]]; then
+                ROOT="$arg"
+            else
+                echo "unexpected argument: $arg" >&2
+                exit 64
+            fi
+            ;;
+    esac
+done
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="${ROOT:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
+ROOT="$(cd "$ROOT" && pwd)"
+BUILD_DIR="${ROOT}/build"
+AUDIT_SCRIPT="${HOME}/.codex/skills/uos-design/scripts/audit_uos_qml.sh"
+VALIDATE_SCRIPT="${HOME}/.codex/skills/uos-design/scripts/validate_uos_release.sh"
+
+if [[ ! -x "$AUDIT_SCRIPT" ]]; then
+    echo "missing UOS design audit script: $AUDIT_SCRIPT" >&2
+    exit 72
+fi
+
+jobs="$(
+    if command -v nproc >/dev/null 2>&1; then
+        nproc
+    else
+        getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4
+    fi
+)"
+
+echo "==> UOS static audit"
+bash "$AUDIT_SCRIPT" "$ROOT"
+
+if [[ ! -d "$BUILD_DIR" || "$force_configure" -eq 1 ]]; then
+    echo "==> CMake configure"
+    cmake -S "$ROOT" -B "$BUILD_DIR"
+fi
+
+echo "==> Build"
+cmake --build "$BUILD_DIR" -j"$jobs"
+
+if [[ "$run_validate" -eq 1 ]]; then
+    if [[ ! -x "$VALIDATE_SCRIPT" ]]; then
+        echo "missing UOS design release validation script: $VALIDATE_SCRIPT" >&2
+        exit 72
+    fi
+
+    echo "==> Release validation"
+    bash "$VALIDATE_SCRIPT" --skip-configure --skip-build "$ROOT"
+fi

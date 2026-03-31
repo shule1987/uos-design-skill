@@ -15,7 +15,20 @@ Load this file when an exception is necessary.
   - `uos-design: allow-full-window-base-under-sidebar-blur`
   - `uos-design: allow-full-window-blur`
   - `uos-design: allow-settings-checkbox-fallback`
+  - `uos-design: allow-settings-combobox-fallback`
+  - `uos-design: allow-settings-lineedit-fallback`
+  - `uos-design: allow-plain-button-fallback`
+  - `uos-design: allow-plain-textfield-fallback`
+  - `uos-design: allow-plain-combobox-fallback`
+  - `uos-design: allow-plain-switch-fallback`
+  - `uos-design: allow-plain-checkbox-fallback`
+  - `uos-design: allow-plain-menu-fallback`
+  - `uos-design: allow-plain-progressbar-fallback`
+  - `uos-design: allow-plain-scrollbar-fallback`
+  - `uos-design: allow-fixed-card-shell-size`
+  - `uos-design: allow-centered-sidebar-list-content`
   - `uos-design: allow-custom-settings-row-metrics`
+  - `uos-design: allow-manual-dialog-action-row`
   - `uos-design: allow-ephemeral-settings-dialog`
   - `uos-design: allow-list-without-leading-icon`
   - `uos-design: allow-horizontal-list-scroll`
