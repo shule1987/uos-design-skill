@@ -7,6 +7,8 @@ description: DTK-first UOS and Deepin QML desktop UI workflow for Linux desktops
 
 Use this skill for DTK-first Linux desktop UI work in QML. Keep the skill body lean. Load only the smallest relevant reference file instead of pulling broad design docs by default.
 
+For multi-page, multi-window, repo-wide, or explicitly delegated work, pair this skill with `uos-design-orchestrator`. In that pairing, this skill stays the single source of design truth, rule interpretation, and audit authority.
+
 ## Workflow
 
 1. Inspect local reality first:
@@ -65,6 +67,7 @@ Use this skill for DTK-first Linux desktop UI work in QML. Keep the skill body l
 ## Non-Negotiables
 
 - Treat local DTK availability as authoritative. If `org.deepin.dtk` or the settings module exposes the needed control, use it instead of rebuilding an equivalent from plain Qt Quick Controls.
+- If this skill is paired with `uos-design-orchestrator`, child agents must still follow this skill and its references. The orchestration layer may split work, but it must not redefine or relax any rule here.
 - Main windows must not ship with a window-manager-owned or system title bar. Use the DTK standard unified header path instead.
 - Main windows must expose the top-right DTK control strip as menu, minimize, maximize or restore, and close. Omit maximize or restore only when the window is intentionally fixed-size.
 - When the exact main-window DTK wiring is needed, follow `references/components/unified-header.md` instead of improvising the header, menu, and window-button structure from scratch.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "UOS Design Orchestrator"
+  short_description: "Lead-agent orchestration for large UOS UI programs"
+  default_prompt: "Use $uos-design-orchestrator to coordinate a large UOS or Deepin UI task, split clear ownership across sub-agents, keep $uos-design as the rule base, and finish with integrated audit plus runtime validation."
