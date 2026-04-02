@@ -22,6 +22,7 @@ Apply `references/policies/windowing.md`.
 - A claimed DTK unified titlebar-toolbar path still shows a system title bar plus a second toolbar.
 - Page-switching tabs still live in the page body instead of the DTK unified header toolbar.
 - The header still cuts off scrollable content with an opaque toolbar slab instead of reading as the top frosted layer above underlapping content.
+- A persistent-sidebar main window still repairs the top band with a separate full-width titleband surface instead of carrying the sidebar surface and right content base up under the DTK header controls.
 - A persistent-sidebar content-side titlebar band still uses a plain color surface with no real titlebar blur layer.
 - Main work-area page switching still hard cuts between major pages instead of using a short animated transition in the real page host.
 

@@ -22,7 +22,7 @@ It reports blocking findings for:
 - main windows that omit the DTK standard header, omit D.TitleBar.menu, or omit D.WindowButtonGroup
 - main windows whose explicit window flags drop minimize, maximize, or close button hints required by the DTK header strip
 - DTK main windows that still use Qt.CustomizeWindowHint or explicitly drop Qt.WindowTitleHint from the title-bar flag set
-- transparent DTK main windows whose live title-band background is left visually transparent instead of using a theme surface token
+- transparent non-sidebar DTK main windows whose live title-band background is left visually transparent instead of using a theme surface token
 - transparent DTK main windows whose right-side content base surface starts only below the title-band height, leaving the toolbar to blend against the desktop
 - forced non-DTK global styles
 - frameless top-level windows without waivers
@@ -1279,9 +1279,7 @@ detect_transparent_titlebar_background_hits() {
     fi
 
     if grep -qE 'StyledBehindWindowBlur|sidebarWidth|sidebarShell|sidebarHost|onCollapseRequested' "$file"; then
-        if [[ -z "$(detect_persistent_sidebar_header_surface_hits "$file")" ]]; then
-            return
-        fi
+        return
     fi
 
     if ! grep -qE 'Theme\.(titlebarBg|bgToolbar)([^A-Za-z0-9_]|$)' "$file"; then

@@ -22,7 +22,8 @@ Load this file for top-level windows, title bars, menus, and unified-header requ
 - Clickable titlebar and page-switch controls must expose visible hover and pressed states in both light and dark themes.
 - Do not hardcode manual menu popup coordinates unless a validated platform constraint leaves no alternative.
 - On the normal DTK main-window path, do not use `Qt.CustomizeWindowHint`, and do not drop `Qt.WindowTitleHint` when explicitly setting flags.
-- If the main window is transparent and uses an embedded or unified DTK top band, provide a theme-backed title-band surface and extend the content-side base surface under that band.
+- If the main window is transparent and uses an embedded or unified DTK top band without a persistent-sidebar split shell, provide a theme-backed title-band surface and extend the content-side base surface under that band.
+- In persistent-sidebar main windows, do not repair transparency with a standalone `Theme.bgToolbar`, `Theme.titlebarBg`, or other full-width top-band slab. Carry the left sidebar surface and right content base up under the DTK header controls and keep a real titlebar blur path on the content side.
 - Treat the frosted DTK header as the top layer above scrollable content. Do not end the visible content at the header line with a separate opaque toolbar slab.
 - When scrollable content visually underlaps the header band, account for that overlap in the scrollable content height and top inset so the first and last meaningful content blocks remain fully reachable.
 - Main work-area page switching must not hard cut. When a `Loader`, page stack, or equivalent host swaps major pages, give the transition a short opacity-plus-position animation using theme motion tokens.

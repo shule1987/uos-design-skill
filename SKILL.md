@@ -11,36 +11,42 @@ For multi-page, multi-window, repo-wide, or explicitly delegated work, pair this
 
 ## Workflow
 
-1. Inspect local reality first:
+1. Read repo-local requirements first:
+   - If the target repo contains Markdown requirements, PRD, spec, or acceptance docs under `docs/`, inspect the smallest relevant `docs/**/*.md` set before proposing code, wiring audits, or changing build paths.
+   - Treat repo-local `docs/*.md` requirements as the primary product source unless the user explicitly overrides them or the repo exposes a newer authoritative local spec elsewhere.
+2. Inspect local reality first:
    - target Qt version
    - local DTK exports from `references/local-dtk-controls.md` plus the actual `qmldir` files on disk
    - target session type (`Wayland` or `X11`) when windowing, blur, or popup behavior matters
    - build integration points such as `CMakeLists.txt`, `main.cpp`, and QML imports
    - whether the DTK standard unified header path is actually validated on this Qt/DTK/window-manager stack
-2. Route to the smallest relevant reference set before proposing code. Use `references/routing.md` when the right file choice is not obvious or the task spans multiple areas.
+3. Route to the smallest relevant reference set before proposing code. Use `references/routing.md` when the right file choice is not obvious or the task spans multiple areas.
    - For header glass, toolbar blur, or "content scrolling under a frosted header" work, load `references/components/unified-header.md` and `references/components/blur.md`.
+   - For persistent-sidebar main windows, control-center-style settings shells, or any bug that mentions a transparent sidebar-top band, load `references/components/control-center-sidebar.md`, `references/components/unified-header.md`, and `references/components/blur.md` together before touching the window shell.
    - For header page-switch controls, header action buttons, or number-first summary surfaces, also load only the needed files from `references/local-dtk-controls.md`, `references/policies/theme-icons.md`, and `references/foundations/typography.md`.
    - For cards, dashboard tiles, overview walls, or any card-heavy surface, load `references/components/card.md` and `references/policies/layout-density.md`, plus `references/foundations/colors.md` when the task touches card surface hierarchy.
    - When the card work includes 2-column equal-height bands or asymmetric overview rows, plan the page around reusable local primitives instead of page-level height glue. Use a primitive equivalent to `EqualizedCardPairBand` for exactly two peer cards and a primitive equivalent to `BalancedTwoColumnCardBand` for asymmetric 2-column compositions.
    - When starting a new repo or hardening a repo that keeps leaking obvious UI regressions, load `references/repo-guardrails.md` and establish repo-local guarded build and page-scaffold paths early instead of waiting for the first release audit. When appropriate, bootstrap that baseline from `scripts/install_repo_guardrails.sh` under this skill instead of rewriting the starter files by hand.
    - Before writing business QML, explicitly name the local primitives you intend to reuse for the touched surface and the open-coded structures you will forbid. If the repo can support a page or surface scaffold, prefer that scaffold over starting from a blank page file.
-3. Before substantial edits, define the completion gate for the touched feature:
+4. Before substantial edits, define the completion gate for the touched feature:
    - touched windows, dialogs, pages, and other shipped scenes
    - touched controllers, models, or other backend behavior that affects those scenes
    - relevant PRD or acceptance criteria sources
+   - when repo-local requirements exist under `docs/*.md`, name the specific Markdown files that define the touched behavior and treat them as the default acceptance source
+   - for persistent-sidebar main windows, the shell contract: one continuous sidebar surface from the top edge to the bottom edge, one right content base that also reaches the top edge under the DTK header controls, and one content-side header glass path that preserves real content underlap and frosted blur readability instead of falling back to a painted slab
    - build command, static audit command, and automatic dynamic validation command set
    - if runtime visual audit exists and the touched surface has multiple pages, deep scroll sections, or auxiliary windows, maintain repo-local scene coverage instead of relying on the default first viewport only
    - if the shipped window is resizable across a meaningful width or height range, maintain repo-local runtime window-size coverage as well; default-size-only audit is not enough for responsive sign-off
    - if the repo lacks an automatic dynamic validation path for the touched shipped surface, add or wire one before calling the task complete
    - if the repo has a build system, wire the strongest available static audit gate into the normal developer build path or add one repo-local guarded build command so violations fail during routine iteration instead of only at final release validation
-4. Prefer DTK controls whenever the local export map says they exist.
-5. Use narrow fallbacks only when you can name the exact missing DTK capability, version gap, or platform constraint.
-6. Run `scripts/audit_uos_qml.sh <repo-root>` before substantial QML edits and again before finishing. Treat findings as blocking unless fixed or covered by a narrow waiver comment.
+5. Prefer DTK controls whenever the local export map says they exist.
+6. Use narrow fallbacks only when you can name the exact missing DTK capability, version gap, or platform constraint.
+7. Run `scripts/audit_uos_qml.sh <repo-root>` before substantial QML edits and again before finishing. Treat findings as blocking unless fixed or covered by a narrow waiver comment.
    - When the project exposes the `UOS_DESIGN_VISUAL_AUDIT` runtime hook, the audit is not complete until the live runtime geometry pass also runs for the main window and any shipped auxiliary scene windows.
    - Do not treat the static shell heuristics as sufficient by themselves for layout sign-off when runtime geometry is available.
    - When you add or tighten a strong constraint in this skill or its `references/policies/*.md` files, land the corresponding `audit_uos_qml.sh` and, when needed, `validate_uos_release.sh` coverage in the same change so the rule becomes automatically enforceable.
    - Treat audit-tool integrity as part of the gate: detector self-check failures, stderr noise, or other checker runtime errors are blocking even when the script would otherwise print a pass line.
-7. Before reporting build completion, task completion, or release readiness, perform a full review and automatic dynamic validation on the built artifact.
+8. Before reporting build completion, task completion, or release readiness, perform a full review and automatic dynamic validation on the built artifact.
    - Build success is an intermediate milestone, not a sign-off signal.
    - Prefer `scripts/validate_uos_release.sh <repo-root>` when the repo provides it; otherwise use the skill script at `scripts/validate_uos_release.sh` under this skill plus the focused review references.
    - Load `references/review-checklist.md`, then the smallest matching file under `references/review/`, even for implementation close-out when shipped UI or behavior changed.
@@ -49,12 +55,13 @@ For multi-page, multi-window, repo-wide, or explicitly delegated work, pair this
    - When runtime visual audit produces screenshot artifacts, inspect representative captures from the generated dump directory before closing: at minimum one resting scene, one real header-overlap or deep-scroll scene when applicable, and one narrower window-size scene when applicable. Do not treat green logs alone as visual sign-off.
    - For substantive shipped UI changes, also load `references/review/obvious-visual-failures.md` and explicitly screen the generated artifacts for those patterns.
    - Do not declare the build complete while full review or automatic dynamic validation is still pending.
-8. When the user asks for a review, load `references/review-checklist.md`, then only the smallest matching file under `references/review/`, and load `references/review/close-out.md` before finalizing a substantial review close-out.
+9. When the user asks for a review, load `references/review-checklist.md`, then only the smallest matching file under `references/review/`, and load `references/review/close-out.md` before finalizing a substantial review close-out.
 
 ## Reference Routing
 
 - Always start with `references/local-dtk-controls.md`.
 - For new main windows, unified-header refactors, or any case where the exact DTK titlebar wiring is unclear, load `references/components/unified-header.md`.
+- For persistent-sidebar main windows, control-center-style settings shells, or sidebar-top continuity regressions, also load `references/components/control-center-sidebar.md` together with `references/components/unified-header.md` and `references/components/blur.md`.
 - For header blur tuning, Unote-like frosted toolbars, or cases where scrolling content should read through the header band, load `references/components/unified-header.md` and `references/components/blur.md`.
 - Load `references/routing.md` when you need help choosing the smallest matching foundation, component, policy, or review files.
 - Load `references/repo-guardrails.md` when establishing repo-local developer workflow, scaffolding, or default guardrails for future projects.
@@ -66,11 +73,13 @@ For multi-page, multi-window, repo-wide, or explicitly delegated work, pair this
 
 ## Non-Negotiables
 
+- When a repo contains Markdown requirement docs under `docs/`, read the smallest relevant `docs/**/*.md` set before implementation, review, or release sign-off. Do not skip repo-local `docs/*.md` requirements and infer product behavior from code alone unless the user explicitly overrides them.
 - Treat local DTK availability as authoritative. If `org.deepin.dtk` or the settings module exposes the needed control, use it instead of rebuilding an equivalent from plain Qt Quick Controls.
 - If this skill is paired with `uos-design-orchestrator`, child agents must still follow this skill and its references. The orchestration layer may split work, but it must not redefine or relax any rule here.
 - Main windows must not ship with a window-manager-owned or system title bar. Use the DTK standard unified header path instead.
 - Main windows must expose the top-right DTK control strip as menu, minimize, maximize or restore, and close. Omit maximize or restore only when the window is intentionally fixed-size.
 - When the exact main-window DTK wiring is needed, follow `references/components/unified-header.md` instead of improvising the header, menu, and window-button structure from scratch.
+- In persistent-sidebar main windows, do not fix a transparent header or sidebar-top gap by painting a standalone `Theme.bgToolbar`, `Theme.titlebarBg`, or other full-width top-band slab. The valid fix is the split underlay recipe: keep the sidebar surface continuous to the top edge, keep the right content base continuous under the header controls, and keep a real content-side titlebar blur path.
 - Desktop content surfaces should use the available content width truthfully. Do not leave a narrow centered column floating inside a wide work area unless the surface is intentionally readability-capped or the user explicitly asks for it.
 - Page-switching tabs belong in the DTK unified header toolbar via `D.TitleBar.content`, not in a second in-page toolbar band.
 - Header-toolbar page switching must use a locally exported DTK grouped mutually-exclusive button path such as `D.ButtonBox`, `D.ButtonGroup`, or `D.ControlGroup`. Do not use `TabBar` for main page switching in the unified header.
@@ -106,6 +115,7 @@ For multi-page, multi-window, repo-wide, or explicitly delegated work, pair this
 - In persistent-sidebar main windows, the content-side DTK header band must mount a real titlebar blur layer. A plain `Theme.bg` or panel-colored header rectangle without titlebar blur is not compliant.
 - Header-toolbar overlay tint must use the main window background color as its RGB base, not a separate toolbar color. Keep the documented alpha values, but reduce the sampled blur layer opacity to half of the prior full-strength recipe.
 - When a window has no secondary toolbar under the header, the header overlay should not read as a permanently painted slab at rest. Keep it visually absent by default and fade it in only once scrolling content actually starts overlapping the header lane.
+- If a transparency fix removes the moving-content read, real underlap, or frosted blur behavior from the content-side header, the task is still open even if the transparent strip itself disappeared.
 - When header glass depends on scroll overlap, every scene-covered page that declares scroll-driven `headerGlassProgress` must expose `prepareVisualAuditSection(...)` and drive the main `Flickable` into a real overlap state so runtime audit validates the active frosted header, not only the resting state.
 - If runtime visual audit emits screenshot dumps, those artifacts are part of the completion gate. Keep them for the current run, verify they cover the touched rest-state and stress-state scenes, and treat screenshot-level defects as blockers even when the log itself stays green.
 - Page-switch loaders in the main work area must not hard cut between major pages. Use a short opacity-plus-position transition with theme animation tokens so the state change reads as intentional rather than abrupt.
